@@ -43,7 +43,8 @@
         --font-md: 16px;
         --font-lg: 32px;
         --font-xl: 60px;
-        --font-xxl:70px;
+        --font-xxl: 70px;
+        --font-xxxl: 90px;
     }
 
     /* LIGHT THEME */
@@ -308,11 +309,13 @@
         font-size: var(--font-xxl);
         font-weight: bold;
         text-align: center;
+        letter-spacing: 2px;
     }
     #answer-input {
+        margin-top: 30px;
         font-size: var(--font-xl);
         padding: 15px 20px;
-        width: 250px;
+        width: 300px;
         text-align: center;
         background: var(--bg-secondary);
         border: 2px solid var(--accent-blue-dark);
@@ -325,6 +328,38 @@
     }
     #answer-input:hover { cursor: text; }
 
+    /* MCQ Options */
+    #mcq-options {
+        display: none;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        width: 100%;
+        max-width: 500px;
+        margin-top: 50px;
+    }
+    .mcq-btn {
+        padding: 20px;
+        font-size: var(--font-lg);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 2px solid var(--accent-blue-dark);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-align: center;
+    }
+    .mcq-btn:hover {
+        background: var(--accent-blue-dark);
+        transform: translateY(-2px);
+    }
+    .mcq-btn.wrong-flash {
+        color: white;
+        border-color: var(--accent-red-bright);
+    }
+    .mcq-btn.correct-flash {
+        color: white;
+        border-color: var(--accent-green-bright);
+    }
     /* Session End View */
     .session-end-view {
         position: fixed;
@@ -346,13 +381,13 @@
         display: flex;
     }
     .session-end-view .score-display {
-        font-size: var(--font-xxl);
+        font-size: var(--font-xxxl);
         font-weight: bold;
         color: var(--accent-blue-bright);
     }
     .session-end-view button {
         display: flex;
-        margin-top: 10px;
+        margin-top: 15px;
         padding: 12px 24px;
         font-size: var(--font-md);
         background: var(--accent-blue);
@@ -717,6 +752,9 @@
                             <label><input type="checkbox" name="ops" value="multiplication">Multiplication ×</label>
                             <label><input type="checkbox" name="ops" value="division">Division ÷</label>
                             <label><input type="checkbox" name="ops" value="squares">Squares ²</label>
+                            <label><input type="checkbox" name="ops" value="fractions">Fractions</label>
+                            <label><input type="checkbox" name="ops" value="decimals">Decimals</label>
+                            <label><input type="checkbox" name="ops" value="percentages">Percentages</label>
                         </div>
                     </div>
 
@@ -759,7 +797,7 @@
                         <div class="custom-section">
                             <div class="question-count-control">
                                 <h4>Questions Count</h4>
-                                <input type="range" id="question-count" min="10" max="200" value="60" style="flex:1;accent-color:var(--accent-blue-bright);">
+                                <input type="range" id="question-count" min="10" max="210" step="10" value="60" style="flex:1;accent-color:var(--accent-blue-bright);">
                                 <span id="question-count-display" style="font-size:var(--font-lg);font-weight:bold;">60</span>
                             </div>
                         </div>
@@ -788,6 +826,11 @@
                                 <input type="number" id="question-custom-time-input" placeholder="Enter seconds" class="question-time-select" style="width:140px;">
                             </div>
                         </div>
+                        <label><input type="checkbox" id="custom-mcq" onchange="toggleMCQ()">MCQ Mode (4 Options)</label>
+                        <label style="display:flex;align-items:center;gap:10px;">
+                            <input type="checkbox" id="custom-penalty" onchange="togglePenalty()">Penalty per wrong answer (-)
+                            <input type="number" id="penalty-amount" value="1" min="1" max="5" style="width:60px;padding:5px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--accent-gray-dark);border-radius:8px;" disabled>
+                        </label>
                     </div>
                 </div>
             </form>
@@ -817,21 +860,28 @@
                         <div id="timer-combo-bar-fill"></div>
                     </div>
                 </div>
+                <div id="question-display">12 × 13 =</div>
                 <div class="question-input-row">
-                    <div id="question-display">12 × 13 =</div>
                     <input type="text" id="answer-input" inputmode="numeric" autofocus>
+                </div>
+                <!-- Add this MCQ container -->
+                <div id="mcq-options">
+                    <button class="mcq-btn" data-option="0"></button>
+                    <button class="mcq-btn" data-option="1"></button>
+                    <button class="mcq-btn" data-option="2"></button>
+                    <button class="mcq-btn" data-option="3"></button>
                 </div>
             </div>
         </section>
 
         <!-- SESSION END -->
         <section id="view-session-end" class="view session-end-view">
-            <div style="font-size:var(--font-lg);color:var(--text-primary);">🎉 Session Complete!</div>
+            <div style="font-size:var(--font-lg);color:var(--text-primary);">Session Complete!</div>
             <div class="score-display" id="final-score">0</div>
             <div style="font-size:18px;color:var(--accent-gray);" id="final-details">Details will appear here</div>
             <button id="home-btn">🏠 Back to Home</button>
-            <button id="try-again-btn">🔄 Try Again</button>
             <button id="analytics-btn">📊 Analytics</button>
+            <button id="try-again-btn">🔄 Try Again</button>
         </section>
 
         <!-- ANALYTICS -->
@@ -1321,7 +1371,10 @@
                     division: this.generateDivision,
                     squares: this.generateSquares,
                     carry: this.generateCarryAddition,
-                    borrow: this.generateBorrowSubtraction
+                    borrow: this.generateBorrowSubtraction,
+                    fractions: this.generateFractions,
+                    decimals: this.generateDecimals,
+                    percentages: this.generatePercentages
                 };
                 const generator = generatorMap[operation];
                 if (!generator) throw new Error(`Unknown operation: ${operation}`);
@@ -1337,18 +1390,95 @@
                 const randomOp = operationKeys[Math.floor(Math.random() * operationKeys.length)];
                 const config = operations[randomOp];
                 const generatorMap = {
-                    addition: QuestionGenerator.generateAddition,
-                    subtraction: QuestionGenerator.generateSubtraction,
-                    multiplication: QuestionGenerator.generateMultiplication,
-                    division: QuestionGenerator.generateDivision,
-                    squares: QuestionGenerator.generateSquares,
-                    carry: QuestionGenerator.generateCarryAddition,
-                    borrow: QuestionGenerator.generateBorrowSubtraction
+                    addition: this.generateAddition,
+                    subtraction: this.generateSubtraction,
+                    multiplication: this.generateMultiplication,
+                    division: this.generateDivision,
+                    squares: this.generateSquares,
+                    carry: this.generateCarryAddition,
+                    borrow: this.generateBorrowSubtraction,
+                    fractions: this.generateFractions,
+                    decimals: this.generateDecimals,
+                    percentages: this.generatePercentages
                 };
                 const generator = generatorMap[randomOp];
                 if (!generator) throw new Error(`Unknown Operation ${randomOp}`);
                 const configValues = Object.values(config);
                 return generator.bind(QuestionGenerator)(...configValues);
+            }
+
+            static gcd(a, b) { return b === 0 ? Math.abs(a) : this.gcd(b, a % b); }
+
+            static toFractionString(n, d) {
+                if (n === 0) return "0"; // Handle 0 cases cleanly
+                const g = this.gcd(n, d);
+                return `${n/g}/${d/g}`;
+            }
+
+            static generateFractions() {
+                const denoms = [2, 3, 4, 5, 6, 8, 9];
+                const d1 = denoms[Math.floor(Math.random() * denoms.length)];
+                const d2 = denoms[Math.floor(Math.random() * denoms.length)];
+                const n1 = this.randomInt(1, d1 - 1);
+                const n2 = this.randomInt(1, d2 - 1);
+                const ops = ['+', '-'];
+                const op = ops[Math.floor(Math.random() * ops.length)];
+                
+                let resN, resD;
+                if (op === '+') { 
+                    resN = (n1 * d2) + (n2 * d1); 
+                    resD = d1 * d2; 
+                } else {
+                    let largerN = n1, largerD = d1, smallerN = n2, smallerD = d2;
+                    if ((n1/d1) < (n2/d2)) { largerN = n2; largerD = d2; smallerN = n1; smallerD = d1; }
+                    resN = (largerN * smallerD) - (smallerN * largerD);
+                    resD = largerD * smallerD;
+                    
+                    const isTerm = resN === 0 || [2, 4, 5, 8, 10].includes(resD / this.gcd(resN, resD));
+                    return { 
+                        question: `${largerN}/${largerD} - ${smallerN}/${smallerD}`, 
+                        answer: this.toFractionString(resN, resD), 
+                        decimalAnswer: resN / resD,
+                        isTerminating: isTerm,
+                        operation: "fractions", 
+                        display: `${largerN}/${largerD} - ${smallerN}/${smallerD} =` 
+                    };
+                }
+                
+                const isTerm = resN === 0 || [2, 4, 5, 8, 10].includes(resD / this.gcd(resN, resD));
+                return { 
+                    question: `${n1}/${d1} + ${n2}/${d2}`, 
+                    answer: this.toFractionString(resN, resD), 
+                    decimalAnswer: resN / resD,
+                    isTerminating: isTerm,
+                    operation: "fractions", 
+                    display: `${n1}/${d1} + ${n2}/${d2} =` 
+                };
+            }
+
+            static generateDecimals(op1Min = 1, op1Max = 99, op2Min = 1, op2Max = 99) {
+                const decPlaces = Math.random() > 0.5 ? 1 : 2;
+                const f = Math.pow(10, decPlaces);
+                let op1 = this.randomInt(op1Min * f, op1Max * f) / f;
+                let op2 = this.randomInt(op2Min * f, op2Max * f) / f;
+                const ops = ['+', '-', '×'];
+                const op = ops[Math.floor(Math.random() * ops.length)];
+                let ans;
+                if (op === '+') ans = op1 + op2;
+                else if (op === '-') {
+                    if (op1 < op2) [op1, op2] = [op2, op1]; // Ensure positive result
+                    ans = op1 - op2;
+                } else ans = op1 * op2;
+                ans = Math.round(ans * f) / f; 
+                return { question: `${op1} ${op} ${op2}`, answer: ans.toString(), operation: "decimals", display: `${op1} ${op} ${op2} =` };
+            }
+
+            static generatePercentages() {
+                const percents = [5, 10, 15, 20, 25, 50, 75];
+                const p = percents[Math.floor(Math.random() * percents.length)];
+                const base = this.randomInt(10, 1000);
+                const ans = (p / 100) * base;
+                return { question: `${p}% of ${base}`, answer: ans.toString(), operation: "percentages", display: `${p}% of ${base} =` };
             }
         }
 
@@ -1370,6 +1500,8 @@
                 this.totalQuestions = config.totalQuestions || 0;
                 this.speedMode = config.speedMode || false;
                 this.questionTimeLimit = config.questionTimeLimit || null;
+                this.penalty = config.penalty || 0; 
+                this.mcqMode = config.mcqMode || false;
 
                 this.questions = [];              
                 this.currentIndex = 0;
@@ -1426,7 +1558,25 @@
             submitAnswer(userAnswer) {
                 const question = this.getCurrentQuestion();
                 if (!question) return null;
-                const isCorrect = Number(userAnswer) === question.answer;
+                
+                let isCorrect = false;
+                if (question.operation === "fractions") {
+                    const userStr = String(userAnswer).trim();
+                    if (userStr.includes('/')) {
+                        const parts = userStr.split('/').map(Number);
+                        if (parts.length === 2 && parts[1] !== 0) {
+                            const g = QuestionGenerator.gcd(parts[0], parts[1]);
+                            isCorrect = `${parts[0]/g}/${parts[1]/g}` === question.answer;
+                        }
+                    } else if (question.isTerminating) {
+                        const dec = parseFloat(userStr);
+                        if (!isNaN(dec)) isCorrect = Math.abs(dec - question.decimalAnswer) < 0.0001;
+                    }
+                } else {
+                    // Use tolerance for floating point decimals
+                    isCorrect = Math.abs(parseFloat(userAnswer) - parseFloat(question.answer)) < 0.0001;
+                }
+
                 const timeTaken = this.startTime ? (Date.now() - this.startTime) / 1000 : 0;
                 const result = {
                     question: question.display, userAnswer, correctAnswer: question.answer,
@@ -1434,7 +1584,14 @@
                 };
                 this.results.push(result);
                 this.attempted++;
-                if (isCorrect) { this.score++; this.correct++; }
+                
+                if (isCorrect) {
+                    this.score++;
+                    this.correct++;
+                } else {
+                    this.score -= this.penalty; // Deduct penalty
+                }
+                
                 this.currentIndex++;
                 this.startTime = Date.now();
                 return result;
@@ -1540,11 +1697,14 @@
                 },
                 "optiver": {
                     presetName: "Optiver 80 in 8", timeLimit: 480, unlimited: false, autoAdvance: false, totalQuestions: 80,
+                    penalty: 1, // Hardcoded -1 point for Optiver
                     operations: {
                         addition: { op1Min: 1, op1Max: 999, op2Min: 1, op2Max: 999, shuffle: true },
                         subtraction: { op1Min: 1, op1Max: 999, op2Min: 1, op2Max: 999, neg: false },
                         multiplication: { op1Min: 1, op1Max: 99, op2Min: 1, op2Max: 99, shuffle: true },
-                        division: { op1Min: 1, op1Max: 9999, op2Min: 1, op2Max: 99 }
+                        division: { op1Min: 1, op1Max: 9999, op2Min: 1, op2Max: 99 },
+                        decimals: { op1Min: 1, op1Max: 99, op2Min: 1, op2Max: 99 },
+                        percentages: {}
                     }
                 },
                 "squares": {
@@ -1576,6 +1736,14 @@
             const firstQuestion = currentSession.getCurrentQuestion();
             if (firstQuestion) document.getElementById("question-display").textContent = firstQuestion.display;
 
+            if (currentSession.mcqMode) {
+                renderMCQOptions(firstQuestion);
+            } else {
+                document.getElementById("mcq-options").style.display = "none";
+                document.querySelector(".question-input-row").style.display = "flex"; 
+                document.getElementById("answer-input").focus(); 
+            }
+
             secondsRemaining = config.timeLimit;
             updateTimerDisplay();
             startTimer(secondsRemaining);
@@ -1604,6 +1772,31 @@
             const speedControls = document.getElementById("speed-controls");
             if (speedMode.checked) speedControls.style.display = "block";
             else speedControls.style.display = "none";
+        }
+
+        function toggleMCQ() {
+            const mcqMode = document.getElementById("custom-mcq");
+            const autoAdvance = document.getElementById("custom-auto-advance");
+            if (mcqMode.checked) {
+                autoAdvance.checked = true; // Force default checked
+                autoAdvance.disabled = true;
+            } else {
+                autoAdvance.disabled = false;
+            }
+        }
+
+        function togglePenalty() {
+            const customPenalty = document.getElementById("custom-penalty");
+            const penaltyAmount = document.getElementById("penalty-amount");
+            if (customPenalty.checked) {
+                penaltyAmount.disabled = false;
+                penaltyAmount.style.opacity = "1";
+                penaltyAmount.style.cursor = "text";
+            } else {
+                penaltyAmount.disabled = true;
+                penaltyAmount.style.opacity = "0.5";
+                penaltyAmount.style.cursor = "not-allowed";
+            }
         }
 
         function toggleAddition() {
@@ -2031,6 +2224,15 @@
                     case "squares":
                         operations.squares = { min: Math.max(op1Min, 2), max: Math.min(op1Max, 99) };
                         break;
+                    case "fractions": 
+                        operations.fractions = {}; 
+                        break;
+                    case "decimals": 
+                        operations.decimals = { op1Min, op1Max, op2Min, op2Max }; 
+                        break;
+                    case "percentages": 
+                        operations.percentages = {}; 
+                        break;
                 }
             });
 
@@ -2043,7 +2245,10 @@
                 timeLimit = parseInt(timeLimitValue) || 60;
             }
 
-            const questionCount = parseInt(document.getElementById("question-count").value) || 20;
+            const questionCountVal = parseInt(document.getElementById("question-count").value);
+            const unlimited = questionCountVal >= 210; // 210 is the Infinity trigger
+            const totalQuestions = unlimited ? 0 : questionCountVal;
+
             const autoAdvance = document.getElementById("custom-auto-advance").checked;
             const speedMode = document.getElementById("speed-mode").checked;
             let questionTimeLimit = null;
@@ -2053,12 +2258,17 @@
                 questionTimeLimit = parseInt(qTime) || 2;
             }
 
+            const mcqMode = document.getElementById("custom-mcq").checked;
+            const hasPenalty = document.getElementById("custom-penalty").checked;
+            const penaltyAmount = hasPenalty ? parseInt(document.getElementById("penalty-amount").value) || 1 : 0;
+
             return {
                 presetName: "Custom Session",
-                timeLimit, unlimited: false, totalQuestions: questionCount,
-                autoAdvance, speedMode, questionTimeLimit, operations
+                timeLimit, unlimited, totalQuestions,
+                autoAdvance, speedMode, questionTimeLimit, operations,
+                mcqMode, penalty: penaltyAmount
             };
-        }
+        } 
 
         function resetCustomForm() {
             document.querySelectorAll("input[name='ops']").forEach(cb => { cb.checked = cb.value === "addition"; });
@@ -2083,6 +2293,12 @@
             document.getElementById("question-time-limit").value = "2";
             document.getElementById("question-time-custom").style.display = "none";
             document.getElementById("question-custom-time-input").value = "";
+            document.getElementById("custom-mcq").checked = false;
+            document.getElementById("custom-penalty").checked = false;
+            document.getElementById("penalty-amount").value = 1;
+            document.getElementById("penalty-amount").disabled = true;
+            togglePenalty();
+            toggleMCQ();
         }
 
         // ===== PER-QUESTION TIMER VISUALS =====
@@ -2161,6 +2377,71 @@
             document.getElementById("timer-display").textContent = `⏱️ ${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
         }
 
+        function renderMCQOptions(question) {
+            const mcqDiv = document.getElementById("mcq-options");
+            document.querySelector(".question-input-row").style.display = "none"; 
+            mcqDiv.style.display = "grid";
+            
+            let options = new Set([String(question.answer)]);
+            let attempts = 0;
+            while (options.size < 4 && attempts < 50) {
+                attempts++;
+                let distractor;
+                if (question.operation === "fractions") {
+                    const denoms = [2, 3, 4, 5, 8];
+                    const d = denoms[Math.floor(Math.random() * denoms.length)];
+                    const n = Math.floor(Math.random() * (d - 1)) + 1; // avoid 0
+                    distractor = `${n}/${d}`;
+                } else if (question.operation === "decimals" || question.operation === "percentages") {
+                    const base = parseFloat(question.answer);
+                    const offset = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 1);
+                    distractor = String(parseFloat((base + offset).toFixed(2))); // Clean up trailing zeros
+                } else {
+                    const offset = QuestionGenerator.randomInt(1, 20) * (Math.random() > 0.5 ? 1 : -1);
+                    distractor = String(parseInt(question.answer) + offset);
+                }
+                if (String(distractor) !== String(question.answer)) options.add(String(distractor));
+            }
+            
+            // Fallback if we couldn't generate 4 unique options
+            while(options.size < 4) {
+                options.add("N/A " + (options.size));
+            }
+            
+            const shuffled = QuestionGenerator.shuffleArray(Array.from(options));
+            const buttons = mcqDiv.querySelectorAll(".mcq-btn");
+            buttons.forEach((btn, i) => {
+                btn.textContent = shuffled[i];
+                btn.dataset.value = shuffled[i];
+                btn.classList.remove("wrong-flash", "correct-flash");
+                btn.onclick = () => handleMCQClick(shuffled[i], btn);
+            });
+        }
+
+        function handleMCQClick(selectedValue, btn) {
+            if (!currentSession) return;
+            const correctValue = currentSession.getCurrentQuestion().answer;
+            if (String(selectedValue) === String(correctValue)) {
+                btn.classList.add("correct-flash");
+            } else {
+                btn.classList.add("wrong-flash");
+            }
+            
+            // Slight delay to let the user see the color flash
+            setTimeout(() => {
+                const result = currentSession.submitAnswer(selectedValue);
+                if (result) {
+                    document.getElementById("score-display").textContent = `Score: ${currentSession.score}`;
+                    const nextQuestion = currentSession.getCurrentQuestion();
+                    if (nextQuestion) {
+                        document.getElementById("question-display").textContent = nextQuestion.display;
+                        if (currentSession.mcqMode) renderMCQOptions(nextQuestion);
+                        questionStartTime = Date.now();
+                    } else { endSession(); }
+                }
+            }, 30);
+        }
+
         function togglePause() {
             isPaused = !isPaused;
             const pauseBtn = document.getElementById("pause-btn");
@@ -2211,8 +2492,9 @@
                     window.currentSessionId = savedSession.id;
                     localStorage.setItem("lastSessionId", savedSession.id);
                 }
-                document.getElementById("final-score").textContent = `${stats.correct} / ${stats.total}`;
-                document.getElementById("final-details").textContent = `${stats.accuracy.toFixed(0)}% accuracy · ${stats.avgTime.toFixed(1)}s avg`;
+                document.getElementById("final-score").textContent = `${session.score} / ${session.totalQuestions}`;
+                document.getElementById("final-details").textContent = `${stats.accuracy.toFixed(0)}% accuracy · ${stats.avgTime.toFixed(2)}s avg`;
+
             }
             const homeBtn = document.getElementById("home-btn");
             if (sessionSource === "custom") homeBtn.textContent = "🏠 Back to Custom";
@@ -2805,11 +3087,23 @@
         // ===== AUTO ADVANCE & KEYDOWN ===== 
         document.getElementById("answer-input").addEventListener("input", function(e) {
             if (!currentSession || !currentSession.autoAdvance) return;
+            if (currentSession.mcqMode) return;
             const answer = this.value.trim();
             if (answer === "") return;
             const question = currentSession.getCurrentQuestion();
             if (!question) { endSession(); return; }
-            if (Number(answer) !== question.answer) return;
+            
+            let isPotentialCorrect = false;
+            // For basic integer operations, auto-advance as soon as the number matches
+            if (["addition", "subtraction", "multiplication", "division", "squares", "carry", "borrow"].includes(question.operation)) {
+                if (Number(answer) === question.answer) isPotentialCorrect = true;
+            } else {
+                // For fractions/decimals/percentages, only auto-advance if exact string matches (to avoid premature advancing on partial decimal input)
+                if (String(answer) === String(question.answer)) isPotentialCorrect = true;
+            }
+            
+            if (!isPotentialCorrect) return;
+            
             const result = currentSession.submitAnswer(answer);
             if (!result) { endSession(); return; }
             document.getElementById("score-display").textContent = `Score: ${currentSession.score}`;
@@ -2841,7 +3135,8 @@
         });
 
         document.getElementById("question-count").addEventListener("input", function() {
-            document.getElementById("question-count-display").textContent = this.value;
+            let val = parseInt(this.value);
+            document.getElementById("question-count-display").textContent = val >= 210 ? "∞" : val;
         });
 
         document.getElementById("select-mode-btn").addEventListener("click", toggleSelectionMode);
@@ -2860,7 +3155,11 @@
                 if (practiceView.classList.contains("active")) exitSession();
             }
         });
-
+        // Initialize penalty state
+        document.addEventListener("DOMContentLoaded", function() {
+            togglePenalty();
+            toggleMCQ();
+        });
         // ===== INIT =====
         showView("view-home");
         console.log("Mental Math Trainer Loaded!");
@@ -2870,5 +3169,3 @@
     </script>
 </body>
 </html>
-
-
