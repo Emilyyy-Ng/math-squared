@@ -19,8 +19,8 @@
     :root {
         /* DARK THEME (DEFAULT) */
         --bg-primary: #1a1a2e;
-        --bg-secondary: #192546;
-        --bg-hover: #1a2744;
+        --bg-secondary: #172241;
+        --bg-hover: #192643;
 
         --text-primary: #e2e5e5;
         --text-opposite: #2f3f52;
@@ -110,6 +110,7 @@
         max-width: 1200px;
         margin: 0 auto;
         min-height: 80vh;
+        margin-top: 20px;
     }
     .view.active {display: block;}
     .view-description {
@@ -160,19 +161,42 @@
         border-color: var(--accent-blue-bright);
     }
 
-    /* Edit Mode & Remove Button */
+    /* Edit Mode */
+    #edit-home-btn {
+        background: var(--bg-secondary);
+        border: 1px solid var(--accent-gray-dark);
+        padding: 10px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--text-primary);
+        transition: all 0.2s ease;
+        font-size: var(--font-sm);
+    }
+    #edit-home-btn:hover {
+        background: var(--accent-blue-dark); /* Better hover color */
+        border-color: var(--accent-blue);
+    }
+    /* Style for when edit mode is toggled ON */
+    #edit-home-btn.active-edit {
+        background: var(--accent-red-bright);
+        color: white;
+        border-color: var(--accent-red-bright);
+    }
+    #edit-home-btn.active-edit:hover {
+        background: #ff4757; /* Slightly brighter red on hover */
+    }
+        
     .remove-card-btn {
         position: absolute;
         top: 8px; 
-        right: 12px;
-        font-size: 20px;
+        right: 8px;
+        font-size: 22px;
         cursor: pointer;
         display: none;
         z-index: 10;
-        width: 24px;
-        height: 24px;
         text-align: center;
         line-height: 24px;
+        transition: filter 0.2s ease;
     }
     .home-presets-grid.edit-mode .preset-card:not(.add-preset-card) {
         cursor: grab;
@@ -183,6 +207,18 @@
     .home-presets-grid.edit-mode .remove-card-btn {
         display: block;
     }
+    
+    /* Disable standard hover effect when in edit mode */
+    .home-presets-grid.edit-mode .preset-card:not(.add-preset-card):hover {
+        background: var(--bg-secondary); /* Revert to default background */
+        transform: none; /* Stop the lifting effect */
+    }
+
+    /* Add drop shadow to ⛔️ on hover so user knows it's clickable */
+    .home-presets-grid.edit-mode .remove-card-btn:hover {
+        transform: scale(0.90);
+    }
+
     .sortable-ghost {
         opacity: 0.4;
     }
@@ -316,8 +352,7 @@
     }
     .session-end-view button {
         display: flex;
-        gap: 10px;
-        margin-top: 20px;
+        margin-top: 10px;
         padding: 12px 24px;
         font-size: var(--font-md);
         background: var(--accent-blue);
@@ -329,6 +364,14 @@
     }
     .session-end-view button:hover {
         background: var(--accent-blue-dark);
+    }
+
+    /* Fix Safari Font Shrinking & Consistency */
+    select, button {
+        font-family: inherit;
+        -webkit-appearance: none;
+        appearance: none;
+        /* font-size: var(--font-sm); */
     }
 
     /* Custom View */
@@ -617,8 +660,8 @@
         <section id="view-home" class="view active">
             <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:15px;">
                 <h2>Mental Math Trainer</h2>
-                <button id="edit-home-btn" style="background:var(--bg-secondary);border:1px solid var(--accent-gray-dark);padding:10px 16px;border-radius:6px;cursor:pointer;color:var(--text-primary);transition:all 0.2s ease;">
-                    ✎ Edit Home Screen
+                <button id="edit-home-btn">
+                    Edit Home Screen
                 </button>
             </div>
             
@@ -684,13 +727,13 @@
                             <div class="ranges-grid">
                                 <div class="range-group">
                                     <label>Operand 1</label>
-                                    <input type="number" id="op1-min" value="1">
-                                    <input type="number" id="op1-max" value="100">
+                                    <input style="font-size:12px;" type="number" id="op1-min" value="1">
+                                    <input style="font-size:12px;" type="number" id="op1-max" value="100">
                                 </div>
                                 <div class="range-group">
                                     <label>Operand 2</label>
-                                    <input type="number" id="op2-min" value="1">
-                                    <input type="number" id="op2-max" value="100">
+                                    <input style="font-size:12px;" type="number" id="op2-min" value="1">
+                                    <input style="font-size:12px;" type="number" id="op2-max" value="100">
                                 </div>
                             </div>
                         </div>
@@ -698,7 +741,7 @@
                         <!-- Time Limit -->
                         <div class="custom-section">
                             <h4 style="margin-bottom:10px;">Time Limit</h4>
-                            <select id="total-time-limit" class="time-select" onchange="toggleCustomTime(this)">
+                            <select id="total-time-limit" class="time-select" onchange="toggleCustomTime(this)" style="font-size:12px;">
                                 <option value="30">30 seconds</option>
                                 <option value="60" selected>1 minute</option>
                                 <option value="120">2 minutes</option>
@@ -809,7 +852,7 @@
                     <p class="view-description">Past sessions will appear here</p>
                 </div>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
-                    <button id="select-mode-btn" style="background:var(--bg-secondary);border:1px solid var(--accent-gray-dark);padding:10px 16px;border-radius:6px;cursor:pointer;color:var(--text-primary);transition:all 0.2s ease;">
+                    <button id="select-mode-btn" style="background:var(--bg-secondary);border:1px solid var(--accent-gray-dark);padding:10px 16px;border-radius:6px;cursor:pointer;color:var(--text-primary);transition:all 0.2s ease;font-size:var(--font-sm);">
                         Select Sessions
                     </button>
                     <button id="export-selected-btn" style="background:var(--accent-cyan);border:none;padding:10px 16px;border-radius:6px;cursor:pointer;color:white;display:none;">
@@ -833,7 +876,7 @@
 
             <!-- Filters -->
             <div style="display:flex;gap:15px;margin:20px 0;flex-wrap:wrap;">
-                <select id="performance-filter" style="background:var(--bg-secondary);color:var(--text-primary);padding:10px;border-radius:8px;border:1px solid var(--accent-gray-dark);flex:1;min-width:150px;">
+                <select id="performance-filter" style="background:var(--bg-secondary);color:var(--text-primary);padding:10px;border-radius:8px;border:1px solid var(--accent-gray-dark);flex:1;min-width:150px;font-size:var(--font-sm);">
                     <option value="all">All Sessions</option>
                     <option value="zetamac">Zetamac</option>
                     <option value="eleven">×/÷ by 11</option>
@@ -845,14 +888,14 @@
                     <option value="large-addition">Large Addition</option>
                 </select>
 
-                <select id="metric-selector" style="background:var(--bg-secondary);color:var(--text-primary);padding:10px;border-radius:8px;border:1px solid var(--accent-gray-dark);flex:1;min-width:150px;">
+                <select id="metric-selector" style="background:var(--bg-secondary);color:var(--text-primary);padding:10px;border-radius:8px;border:1px solid var(--accent-gray-dark);flex:1;min-width:150px;font-size:var(--font-sm);">
                     <option value="qpm" selected>QPM</option>
                     <option value="score">Score</option>
                     <option value="avgTime">Avg Time (s)</option>
                     <option value="accuracy">Accuracy %</option>
                 </select>
 
-                <select id="time-window" style="background:var(--bg-secondary);color:var(--text-primary);padding:10px;border-radius:8px;border:1px solid var(--accent-gray-dark);flex:1;min-width:150px;">
+                <select id="time-window" style="background:var(--bg-secondary);color:var(--text-primary);padding:10px;border-radius:8px;border:1px solid var(--accent-gray-dark);flex:1;min-width:150px;font-size:var(--font-sm);">
                     <option value="7">Past Week</option>
                     <option value="30" selected>Past Month</option>
                     <option value="90">Past 3 Months</option>
@@ -861,9 +904,10 @@
                 </select>
             </div>
 
-             <!-- Chart Container -->
-            <div style="background:var(--bg-secondary);padding:20px;border-radius:8px;margin:20px 0;">
-                <canvas id="performance-chart" style="width:100%;height:300px"></canvas>
+            <!-- Chart Container -->
+            <div style="background:var(--bg-secondary);padding:20px;border-radius:8px;margin:20px 0;width:100%;height:350px;position:relative;">
+                <canvas id="performance-chart"></canvas>
+                <div id="performance-chart-container" style="position:absolute;top:20px;right:20px;bottom:20px;left:20px;display:flex;justify-content:center;align-items:center;text-align:center;color:var(--accent-gray);pointer-events:none;"></div>
             </div>
 
             <!-- Operation Breakdown -->
@@ -1712,8 +1756,7 @@
             
             if (homeEditMode) {
                 btn.textContent = '✕ Done';
-                btn.style.background = 'var(--accent-red-bright)';
-                btn.style.color = 'white';
+                btn.classList.add('active-edit');
                 grid.classList.add('edit-mode');
                 
                 if (typeof Sortable !== 'undefined') {
@@ -1730,9 +1773,8 @@
                     });
                 }
             } else {
-                btn.textContent = '✎ Edit Home Screen';
-                btn.style.background = 'var(--bg-secondary)';
-                btn.style.color = 'var(--text-primary)';
+                btn.textContent = 'Edit Home Screen';
+                btn.classList.remove('active-edit');
                 grid.classList.remove('edit-mode');
                 
                 if (sortableInstance) {
@@ -2206,10 +2248,20 @@
             }
             sessions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             if (sessions.length === 0) {
+                const message = filter === "all"
+                    ? "No data yet. Start practicing!"
+                    : "No data for selected filters.";
+                document.getElementById("performance-chart-container").textContent = message;
                 document.getElementById("performance-chart").style.display = "none";
-                document.getElementById("op-breakdown-container").innerHTML = "<p style='color:var(--accent-gray);'>No data for selected filters.</p>";
+                
+                // Render empty tables with just the headers
+                renderOperationBreakdown([]);
+                renderFilteredHistory([]);
                 return;
             }
+
+            // Clear any previous "no data" message and show the chart
+            document.getElementById("performance-chart-container").textContent = "";
             document.getElementById("performance-chart").style.display = "block";
             const labels = sessions.map(s => new Date(s.timestamp).toLocaleDateString());
             const data = sessions.map(s => metric === "score" ? s.stats.correct : s.stats[metric]);
@@ -2275,15 +2327,13 @@
                     breakdown[op].totalTime += data.totalTime;
                 });
             });
-            if (Object.keys(breakdown).length === 0) {
-                container.innerHTML = "<p style='color:var(--accent-gray);'>No operation data available.</p>";
-                return;
-            }
+            
             Object.keys(breakdown).forEach(op => {
                 const data = breakdown[op];
                 data.accuracy = data.attempts > 0 ? (data.correct / data.attempts) * 100 : 0;
                 data.avgTime = data.attempts > 0 ? data.totalTime / data.attempts : 0;
             });
+            
             const html = `
                 <table style="width:100%;border-collapse:collapse;margin:10px 0;">
                     <thead>
@@ -2312,12 +2362,8 @@
         function renderFilteredHistory(sessions) {
             const container = document.getElementById("filtered-history-container");
             if (!container) return;
-            if (sessions.length === 0) {
-                container.innerHTML = "<p style='color:var(--accent-gray);'>No sessions match the current filters.</p>";
-                return;
-            }
-            const sorted = [...sessions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            const html = `
+            
+            let html = `
                 <div style="max-height:800px;overflow-y:auto;margin-top:10px;">
                     <table style="width:100%;border-collapse:collapse;">
                         <thead style="position:sticky;top:0;background:var(--bg-secondary);">
@@ -2331,25 +2377,29 @@
                                 <th style="padding:10px;text-align:center;">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            ${sorted.map(session => `
-                                <tr style="border-bottom:1px solid var(--accent-gray-dark);cursor:pointer;" onclick="showAnalytics('${session.id}', 'history')">
-                                    <td style="padding:10px;">${new Date(session.timestamp).toLocaleString()}</td>
-                                    <td style="padding:10px;">${session.presetName}</td>
-                                    <td style="padding:10px;text-align:center;">${session.stats.correct} / ${session.stats.total}</td>
-                                    <td style="padding:10px;text-align:center;color:${session.stats.accuracy >= 80 ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${session.stats.accuracy.toFixed(0)}%</td>
-                                    <td style="padding:10px;text-align:center;">${session.stats.avgTime.toFixed(2)}s</td>
-                                    <td style="padding:10px;text-align:center;">${session.stats.qpm.toFixed(1)}</td>
-                                    <td style="padding:10px;text-align:center;">
-                                        <button onclick="event.stopPropagation();exportSessionCSV('${session.id}')" style="background:var(--accent-cyan);border:none;padding:4px 8px;border-radius:4px;cursor:pointer;color:white;font-size:12px;margin-right:4px;">CSV</button>
-                                        <button onclick="event.stopPropagation();deleteSession('${session.id}')" style="background:var(--accent-red-bright);border:none;padding:4px 8px;border-radius:4px;cursor:pointer;color:white;font-size:12px;">Delete</button>
-                                    </td>
-                                </tr>
-                            `).join("")}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+                        <tbody>`;
+
+            if (sessions && sessions.length > 0) {
+                const sorted = [...sessions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                sorted.forEach(session => {
+                    html += `
+                        <tr style="border-bottom:1px solid var(--accent-gray-dark);cursor:pointer;" onclick="showAnalytics('${session.id}', 'history')">
+                            <td style="padding:10px;">${new Date(session.timestamp).toLocaleString()}</td>
+                            <td style="padding:10px;">${session.presetName}</td>
+                            <td style="padding:10px;text-align:center;">${session.stats.correct} / ${session.stats.total}</td>
+                            <td style="padding:10px;text-align:center;color:${session.stats.accuracy >= 80 ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${session.stats.accuracy.toFixed(0)}%</td>
+                            <td style="padding:10px;text-align:center;">${session.stats.avgTime.toFixed(2)}s</td>
+                            <td style="padding:10px;text-align:center;">${session.stats.qpm.toFixed(1)}</td>
+                            <td style="padding:10px;text-align:center;">
+                                <button onclick="event.stopPropagation();exportSessionCSV('${session.id}')" style="background:var(--accent-cyan);border:none;padding:4px 8px;border-radius:4px;cursor:pointer;color:white;font-size:12px;margin-right:4px;">CSV</button>
+                                <button onclick="event.stopPropagation();deleteSession('${session.id}')" style="background:var(--accent-red-bright);border:none;padding:4px 8px;border-radius:4px;cursor:pointer;color:white;font-size:12px;">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            html += `</tbody></table></div>`;
             container.innerHTML = html;
         }
 
@@ -2461,11 +2511,7 @@
             const container = document.getElementById("history-container");
             if (!container) return;
             const sessions = dataStore.getSessions();
-            if (sessions.length === 0) {
-                container.innerHTML = "<p style='color:var(--accent-gray);'>No sessions yet. Start practicing!</p>";
-                return;
-            }
-            sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
             let html = `<table style="width:100%;border-collapse:collapse;margin:20px 0;">
                 <thead>
                     <tr style="background:var(--bg-secondary);">
@@ -2482,27 +2528,33 @@
                     </tr>
                 </thead>
                 <tbody>`;
-            sessions.forEach(session => {
-                const isSelected = selectedSessions.has(session.id);
-                html += `
-                    <tr style="border-bottom:1px solid var(--accent-gray-dark);${selectionMode ? 'cursor:pointer;' : 'cursor:pointer;'}" 
-                        onclick="${selectionMode ? `toggleSessionSelection('${session.id}')` : `showAnalytics('${session.id}', 'history')`}">
-                        <td style="padding:10px;text-align:center;${!selectionMode ? 'display:none;' : ''}" onclick="event.stopPropagation();">
-                            <input type="checkbox" class="session-checkbox" value="${session.id}" ${isSelected ? 'checked' : ''} ${!selectionMode ? 'style="display:none;"' : ''} onchange="toggleSessionCheckbox('${session.id}', this.checked)">
-                        </td>
-                        <td style="padding:10px;">${new Date(session.timestamp).toLocaleString()}</td>
-                        <td style="padding:10px;">${session.presetName}</td>
-                        <td style="padding:10px;text-align:center;">${session.stats.correct} / ${session.stats.total}</td>
-                        <td style="padding:10px;text-align:center;color:${session.stats.accuracy >= 80 ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${session.stats.accuracy.toFixed(0)}%</td>
-                        <td style="padding:10px;text-align:center;">${session.stats.avgTime.toFixed(2)}s</td>
-                        <td style="padding:10px;text-align:center;">${session.stats.qpm.toFixed(1)}</td>
-                        <td style="padding:10px;text-align:center;">
-                            <button onclick="event.stopPropagation();exportSessionCSV('${session.id}')" style="background:var(--accent-cyan);border:none;padding:5px 10px;border-radius:4px;cursor:pointer;color:white;margin-right:5px">CSV</button>
-                            <button onclick="event.stopPropagation();deleteSession('${session.id}')" style="background:var(--accent-red-bright);border:none;padding:5px 10px;border-radius:4px;cursor:pointer;color:white;">Delete</button>
-                        </td>
-                    </tr>
-                `;
-            });
+                
+            if (sessions.length === 0) {
+                html += `<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--accent-gray);">No sessions yet. Start practicing!</td></tr>`;
+            } else {
+                sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                sessions.forEach(session => {
+                    const isSelected = selectedSessions.has(session.id);
+                    html += `
+                        <tr style="border-bottom:1px solid var(--accent-gray-dark);${selectionMode ? 'cursor:pointer;' : 'cursor:pointer;'}" 
+                            onclick="${selectionMode ? `toggleSessionSelection('${session.id}')` : `showAnalytics('${session.id}', 'history')`}">
+                            <td style="padding:10px;text-align:center;${!selectionMode ? 'display:none;' : ''}" onclick="event.stopPropagation();">
+                                <input type="checkbox" class="session-checkbox" value="${session.id}" ${isSelected ? 'checked' : ''} ${!selectionMode ? 'style="display:none;"' : ''} onchange="toggleSessionCheckbox('${session.id}', this.checked)">
+                            </td>
+                            <td style="padding:10px;">${new Date(session.timestamp).toLocaleString()}</td>
+                            <td style="padding:10px;">${session.presetName}</td>
+                            <td style="padding:10px;text-align:center;">${session.stats.correct} / ${session.stats.total}</td>
+                            <td style="padding:10px;text-align:center;color:${session.stats.accuracy >= 80 ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${session.stats.accuracy.toFixed(0)}%</td>
+                            <td style="padding:10px;text-align:center;">${session.stats.avgTime.toFixed(2)}s</td>
+                            <td style="padding:10px;text-align:center;">${session.stats.qpm.toFixed(1)}</td>
+                            <td style="padding:10px;text-align:center;">
+                                <button onclick="event.stopPropagation();exportSessionCSV('${session.id}')" style="background:var(--accent-cyan);border:none;padding:5px 10px;border-radius:4px;cursor:pointer;color:white;margin-right:5px">CSV</button>
+                                <button onclick="event.stopPropagation();deleteSession('${session.id}')" style="background:var(--accent-red-bright);border:none;padding:5px 10px;border-radius:4px;cursor:pointer;color:white;">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
             html += `</tbody></table>`;
             container.innerHTML = html;
         }
