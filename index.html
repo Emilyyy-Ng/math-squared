@@ -2,10 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Updated Viewport: prevents zooming (feels more like a native app) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Mental Math Trainer</title>
+
+    <!-- iOS PWA Meta Tags (Makes it an "App" on iPhone) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mental Math">
+    <!-- App Icon (Replace this URL with a 180x180px PNG image of your choice) -->
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/180x180">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SortableJS for drag and drop functionality -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <style>
@@ -14,6 +22,39 @@
         padding: 0;
         box-sizing: border-box;
         font-family: "lucida grande", verdana, sans-serif;
+    }
+
+    /* Make app feel native: disable text selection & tap highlight */
+    * {
+        -webkit-user-select: none;  /* Prevent text selection */
+        user-select: none;          /* Standard property for compatibility */
+        -webkit-tap-highlight-color: transparent; /* Remove gray flash on tap */
+    }
+    /* Allow text selection ONLY inside input fields */
+    input {
+        -webkit-user-select: text; 
+        user-select: text;          /* Standard property for compatibility */
+    }
+
+    body {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        min-height: 100vh;
+        /* Safe areas account for the iPhone notch at top and home bar at bottom */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+
+    /* Adjust navigation for smaller screens */
+    .nav {
+        flex-wrap: wrap; /* allows buttons to wrap to next line on tiny screens */
+        padding: 10px;
+    }
+    .nav button {
+        padding: 8px 12px; /* smaller buttons for thumbs */
+        font-size: 13px;
     }
 
     :root {
@@ -232,16 +273,17 @@
         position: fixed;
         top: 0;
         left: 0;
-        width: 100vw;
-        height: 100vh;
+        width: 100%; 
+        height: 100%; 
         background: var(--bg-primary);
         padding: 20px;
         margin: 0;
         min-width: 100%;
-        min-height: 100vh;
+        min-height: 100%;
         z-index: 1000;
         display: none;
         flex-direction: column;
+        overflow: hidden; /* Prevents the view from scrolling at all */
     }
     .practice-view.active {
         display: flex;
@@ -365,8 +407,11 @@
         position: fixed;
         top: 0;
         left: 0; 
-        min-width: 100vw;     
-        min-height: 100vh;   
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        max-width: none !important; /* Forces full screen width, overriding .view max-width */
         background: var(--bg-primary);
         z-index: 1000;
         display: none;
@@ -374,8 +419,10 @@
         justify-content: center;
         align-items: center;
         gap: 20px;
-        padding: 0;         
-        margin: 0;          
+        padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom); 
+        margin: 0; 
+        overflow-y: auto; 
+        overflow-x: auto;
     }
     .session-end-view.active {
         display: flex;
@@ -384,10 +431,16 @@
         font-size: var(--font-xxxl);
         font-weight: bold;
         color: var(--accent-blue-bright);
+        text-align: center;
+    }
+    .session-end-view #final-details,
+    .session-end-view #session-complete-text {
+        text-align: center;
     }
     .session-end-view button {
-        display: flex;
-        margin-top: 15px;
+        display: block;
+        width: fit-content;
+        margin: 0 auto; /* Centers the button */
         padding: 12px 24px;
         font-size: var(--font-md);
         background: var(--accent-blue);
@@ -400,13 +453,27 @@
     .session-end-view button:hover {
         background: var(--accent-blue-dark);
     }
+    #session-complete-text {
+        font-size: var(--font-lg);
+        color: var(--text-primary);
+    }
 
     /* Fix Safari Font Shrinking & Consistency */
     select, button {
         font-family: inherit;
         -webkit-appearance: none;
         appearance: none;
-        /* font-size: var(--font-sm); */
+        cursor: pointer; /* Forces pointer cursor on all buttons for macOS Safari */
+    }
+    
+    /* Ensure labels and links also show pointer cursor on macOS */
+    label, a {
+        cursor: pointer;
+    }
+    
+    /* Prevent pointer cursor on disabled elements */
+    button:disabled, input:disabled {
+        cursor: not-allowed;
     }
 
     /* Custom View */
@@ -663,6 +730,7 @@
         padding: 0;
         width: 100%;
         transform: translateY(0);
+        margin-bottom: 30px;
     }
     #timer-countdown-number {
         font-size: 28px; font-weight: bold;
@@ -679,6 +747,93 @@
         background: var(--accent-green-bright);
         border-radius: 3px;
         transition: width 0.1s linear, background 0.3s ease;
+    }
+    /* ===== MOBILE RESPONSIVENESS ===== */
+    @media (max-width: 768px) {
+        /* Stack the Custom builder columns on top of each other */
+        .custom-layout {
+            grid-template-columns: 1fr !important;
+        }
+        .ranges-grid {
+            grid-template-columns: 1fr 1fr; /* Keep ranges side-by-side if they fit, otherwise stack */
+        }
+    }
+
+    @media (max-width: 600px) {
+        /* Navigation Bar Adjustments */
+        .nav {
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 8px;
+        }
+        .nav button {
+            padding: 8px 12px;
+            font-size: 13px;
+            flex: 1 1 30%; 
+        }
+
+        /* Practice View Top Bar Adjustments (Force Single Line) */
+        .practice-top-bar {
+            flex-wrap: nowrap !important; 
+            justify-content: space-between;
+            gap: 5px;
+            padding: 8px;
+        }
+        .practice-top-bar > * {
+            flex: 1; 
+            white-space: nowrap; 
+        }
+        .practice-controls {
+            flex: 1; 
+            justify-content: flex-end;
+        }
+        /* Shift content up when keyboard opens on mobile */
+        .practice-question-area {
+            transition: transform 0.3s ease;
+        }
+        body.keyboard-active .practice-question-area {
+            transform: translateY(-15vh); /* Moves content up 15% of screen height */
+        }
+        #score-display, #timer-display {
+            font-size: 16px !important; 
+            letter-spacing: 0 !important;
+        }
+        .practice-controls button {
+            padding: 8px 10px;
+            font-size: 16px;
+        }
+        .session-end-view .score-display {
+            font-size: 70px;
+        }
+        #session-complete-text {
+            font-size: 24px;
+        }
+        #pause-btn {
+            display: none !important;
+        }
+
+        #question-display {
+            font-size: 40px !important; 
+        }
+        #answer-input {
+            font-size: 32px !important;
+            width: 80% !important;
+            padding: 10px !important;
+        }
+        .mcq-btn {
+            font-size: 20px !important;
+            padding: 15px !important;
+        }
+
+        /* ===== TABLE TEXT SHRINK FOR MOBILE ===== */
+        table, th, td {
+            padding: 5px !important;
+            font-size: 12px !important; /* Smaller text for phones */
+        }
+        table button {
+            padding: 4px 6px !important;
+            font-size: 10px !important;
+        }
     }
 </style>
 <body>
@@ -848,8 +1003,8 @@
                 <div id="score-display" style="font-size:24px;">Score: 0</div>
                 <div id="timer-display" style="font-size:24px;font-weight:bold;text-align:center;letter-spacing:1px;">⏱️ 00:00</div>
                 <div class="practice-controls">
-                    <button id="pause-btn">⏸ Pause</button>
-                    <button id="exit-btn">⤬ Exit</button>
+                    <button id="pause-btn">⏸ <span class="btn-text">Pause</span></button>
+                    <button id="exit-btn">❌ <span class="btn-text">Exit</span></button>
                 </div>
             </div>
             <!-- Per-question timer (speed mode only) -->
@@ -876,7 +1031,7 @@
 
         <!-- SESSION END -->
         <section id="view-session-end" class="view session-end-view">
-            <div style="font-size:var(--font-lg);color:var(--text-primary);">Session Complete!</div>
+            <div id="session-complete-text">Session Complete!</div>
             <div class="score-display" id="final-score">0</div>
             <div style="font-size:18px;color:var(--accent-gray);" id="final-details">Details will appear here</div>
             <button id="home-btn">🏠 Back to Home</button>
@@ -975,6 +1130,18 @@
     </main>
 
     <script>
+        // Polyfill for crypto.randomUUID() on non-secure (HTTP) connections
+        if (!window.crypto) window.crypto = {};
+        if (!window.crypto.randomUUID) {
+            window.crypto.randomUUID = function() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            };
+        }
+
         // ===== DATASTORE =====
         class DataStore {
             constructor() {
@@ -2447,13 +2614,13 @@
             const pauseBtn = document.getElementById("pause-btn");
             const answerInput = document.getElementById("answer-input");  
             if (isPaused) {
-                pauseBtn.textContent = "▶︎ Resume";
+                pauseBtn.innerHTML = "▶︎ <span class='btn-text'>Resume</span>";
                 pauseBtn.classList.add("paused");
                 answerInput.disabled = true;
                 answerInput.blur();
                 pauseStartTime = Date.now();
             } else {
-                pauseBtn.textContent = "⏸ Pause";
+                pauseBtn.innerHTML = "⏸ <span class='btn-text'>Pause</span>";
                 pauseBtn.classList.remove("paused");
                 answerInput.disabled = false;
                 answerInput.focus();
@@ -2492,7 +2659,11 @@
                     window.currentSessionId = savedSession.id;
                     localStorage.setItem("lastSessionId", savedSession.id);
                 }
-                document.getElementById("final-score").textContent = `${session.score} / ${session.totalQuestions}`;
+                if (session.unlimited) {
+                    document.getElementById("final-score").textContent = `${stats.correct} / ${stats.correct + stats.incorrect}`;
+                } else {
+                    document.getElementById("final-score").textContent = `${session.score} / ${session.totalQuestions}`;
+                }
                 document.getElementById("final-details").textContent = `${stats.accuracy.toFixed(0)}% accuracy · ${stats.avgTime.toFixed(2)}s avg`;
 
             }
@@ -2617,26 +2788,28 @@
             });
             
             const html = `
-                <table style="width:100%;border-collapse:collapse;margin:10px 0;">
-                    <thead>
-                        <tr style="background:var(--bg-secondary);">
-                            <th style="padding:10px;text-align:left;">Operation</th>
-                            <th style="padding:10px;text-align:center;">Questions Attempted</th>
-                            <th style="padding:10px;text-align:center;">Avg Time</th>
-                            <th style="padding:10px;text-align:center;">Accuracy</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${Object.entries(breakdown).map(([op, data]) => `
-                            <tr style="border-bottom:1px solid var(--accent-gray-dark);">
-                                <td style="padding:10px;">${op.charAt(0).toUpperCase() + op.slice(1)}</td>
-                                <td style="padding:10px;text-align:center;">${data.attempts.toLocaleString()}</td>
-                                <td style="padding:10px;text-align:center;">${data.avgTime.toFixed(2)}s</td>
-                                <td style="padding:10px;text-align:center;color:${data.accuracy >= 80 ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${data.accuracy.toFixed(0)}%</td>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0;">
+                    <table style="min-width: 400px; width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background:var(--bg-secondary);">
+                                <th style="padding:10px;text-align:left;">Operation</th>
+                                <th style="padding:10px;text-align:center;">Questions Attempted</th>
+                                <th style="padding:10px;text-align:center;">Avg Time</th>
+                                <th style="padding:10px;text-align:center;">Accuracy</th>
                             </tr>
-                        `).join("")}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(breakdown).map(([op, data]) => `
+                                <tr style="border-bottom:1px solid var(--accent-gray-dark);">
+                                    <td style="padding:10px;">${op.charAt(0).toUpperCase() + op.slice(1)}</td>
+                                    <td style="padding:10px;text-align:center;">${data.attempts.toLocaleString()}</td>
+                                    <td style="padding:10px;text-align:center;">${data.avgTime.toFixed(2)}s</td>
+                                    <td style="padding:10px;text-align:center;color:${data.accuracy >= 80 ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${data.accuracy.toFixed(0)}%</td>
+                                </tr>
+                            `).join("")}
+                        </tbody>
+                    </table>
+                </div>
             `;
             container.innerHTML = html;
         }
@@ -2647,19 +2820,20 @@
             
             let html = `
                 <div style="max-height:800px;overflow-y:auto;margin-top:10px;">
-                    <table style="width:100%;border-collapse:collapse;">
-                        <thead style="position:sticky;top:0;background:var(--bg-secondary);">
-                            <tr>
-                                <th style="padding:10px;text-align:left;">Date</th>
-                                <th style="padding:10px;text-align:left;">Preset</th>
-                                <th style="padding:10px;text-align:center;">Score</th>
-                                <th style="padding:10px;text-align:center;">Accuracy</th>
-                                <th style="padding:10px;text-align:center;">Avg Time</th>
-                                <th style="padding:10px;text-align:center;">QPM</th>
-                                <th style="padding:10px;text-align:center;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table style="min-width: 700px; width:100%; border-collapse:collapse;">
+                            <thead style="position:sticky;top:0;background:var(--bg-secondary);">
+                                <tr>
+                                    <th style="padding:10px;text-align:left;">Date</th>
+                                    <th style="padding:10px;text-align:left;">Preset</th>
+                                    <th style="padding:10px;text-align:center;">Score</th>
+                                    <th style="padding:10px;text-align:center;">Accuracy</th>
+                                    <th style="padding:10px;text-align:center;">Avg Time</th>
+                                    <th style="padding:10px;text-align:center;">QPM</th>
+                                    <th style="padding:10px;text-align:center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
 
             if (sessions && sessions.length > 0) {
                 const sorted = [...sessions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -2681,7 +2855,7 @@
                 });
             }
 
-            html += `</tbody></table></div>`;
+            html += `</tbody></table></div></div>`;
             container.innerHTML = html;
         }
 
@@ -2722,26 +2896,28 @@
                     </div>
                 </div>
                 <h3 style="margin-top:30px;margin-bottom:10px;">By Operation</h3>
-                <table style="width:100%;border-collapse:collapse;margin:10px 0;">
-                    <thead>
-                        <tr style="background:var(--bg-secondary);">
-                            <th style="padding:10px;text-align:left;">Operation</th>
-                            <th style="padding:10px;text-align:center;">Attempts</th>
-                            <th style="padding:10px;text-align:center;">Avg Time</th>
-                            <th style="padding:10px;text-align:center;">Accuracy</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${Object.entries(stats.operations).map(([op, data]) => `
-                            <tr style="border-bottom:1px solid var(--accent-gray-dark);">
-                                <td style="padding:10px;">${op.charAt(0).toUpperCase() + op.slice(1)}</td>
-                                <td style="padding:10px;text-align:center;">${data.attempts}</td>
-                                <td style="padding:10px;text-align:center;">${data.avgTime.toFixed(2)}s</td>
-                                <td style="padding:10px;text-align:center;color:${data.accuracy >= 80 ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${data.accuracy.toFixed(0)}%</td>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0;">
+                    <table style="min-width: 400px; width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background:var(--bg-secondary);">
+                                <th style="padding:10px;text-align:left;">Operation</th>
+                                <th style="padding:10px;text-align:center;">Attempts</th>
+                                <th style="padding:10px;text-align:center;">Avg Time</th>
+                                <th style="padding:10px;text-align:center;">Accuracy</th>
                             </tr>
-                        `).join("")}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(stats.operations).map(([op, data]) => `
+                                <tr style="border-bottom:1px solid var(--accent-gray-dark);">
+                                    <td style="padding:10px;">${op.charAt(0).toUpperCase() + op.slice(1)}</td>
+                                    <td style="padding:10px;text-align:center;">${data.attempts}</td>
+                                    <td style="padding:10px;text-align:center;">${data.avgTime.toFixed(2)}s</td>
+                                    <td style="padding:10px;text-align:center;color:${data.accuracy >= 80 ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${data.accuracy.toFixed(0)}%</td>
+                                </tr>
+                            `).join("")}
+                        </tbody>
+                    </table>
+                </div>
                 ${stats.fastest ? `
                     <div style="margin-top:30px;">
                         <h3 style="margin-bottom:10px;">Fastest Question(s)</h3>
@@ -2756,30 +2932,32 @@
                 ` : ""}
                 <div style="margin-top:30px;">
                     <h3>All Questions</h3>
-                    <table style="width:100%;border-collapse:collapse;margin:10px 0;">
-                        <thead>
-                            <tr style="background:var(--bg-secondary);">
-                                <th style="padding:10px;text-align:left;">No.</th>
-                                <th style="padding:10px;text-align:left;">Question</th>
-                                <th style="padding:10px;text-align:center;">Your Answer</th>
-                                <th style="padding:10px;text-align:center;">Correct Answer</th>
-                                <th style="padding:10px;text-align:center;">Correctness</th>
-                                <th style="padding:10px;text-align:center;">Time Used</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${session.results.map((r, index) => `
-                                <tr style="border-bottom:1px solid var(--accent-gray-dark);">
-                                    <td style="padding:10px">${index + 1}</td>
-                                    <td style="padding:10px">${r.question}</td>
-                                    <td style="padding:10px;text-align:center;">${r.userAnswer}</td>
-                                    <td style="padding:10px;text-align:center;">${r.correctAnswer}</td>
-                                    <td style="padding:10px;text-align:center;color:${r.isCorrect ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${r.isCorrect ? "✓" : "✗"}</td>
-                                    <td style="padding:10px;text-align:center;">${r.timeSeconds.toFixed(2)}s</td>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0;">
+                        <table style="min-width: 600px; width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background:var(--bg-secondary);">
+                                    <th style="padding:10px;text-align:left;">No.</th>
+                                    <th style="padding:10px;text-align:left;">Question</th>
+                                    <th style="padding:10px;text-align:center;">Your Answer</th>
+                                    <th style="padding:10px;text-align:center;">Correct Answer</th>
+                                    <th style="padding:10px;text-align:center;">Correctness</th>
+                                    <th style="padding:10px;text-align:center;">Time Used</th>
                                 </tr>
-                            `).join("")}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                ${session.results.map((r, index) => `
+                                    <tr style="border-bottom:1px solid var(--accent-gray-dark);">
+                                        <td style="padding:10px">${index + 1}</td>
+                                        <td style="padding:10px">${r.question}</td>
+                                        <td style="padding:10px;text-align:center;">${r.userAnswer}</td>
+                                        <td style="padding:10px;text-align:center;">${r.correctAnswer}</td>
+                                        <td style="padding:10px;text-align:center;color:${r.isCorrect ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${r.isCorrect ? "✓" : "✗"}</td>
+                                        <td style="padding:10px;text-align:center;">${r.timeSeconds.toFixed(2)}s</td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             `;
             container.innerHTML = html;
@@ -2794,22 +2972,23 @@
             if (!container) return;
             const sessions = dataStore.getSessions();
             
-            let html = `<table style="width:100%;border-collapse:collapse;margin:20px 0;">
-                <thead>
-                    <tr style="background:var(--bg-secondary);">
-                        <th style="padding:10px;text-align:left;${!selectionMode ? 'display:none;' : ''}">
-                            <input type="checkbox" id="select-all-checkbox" onchange="toggleAllCheckboxes(this.checked)" ${!selectionMode ? 'style="display:none;"' : ''}>
-                        </th>
-                        <th style="padding:10px;text-align:left;">Date</th>
-                        <th style="padding:10px;text-align:left;">Preset</th>
-                        <th style="padding:10px;text-align:center;">Score</th>
-                        <th style="padding:10px;text-align:center;">Accuracy</th>
-                        <th style="padding:10px;text-align:center;">Avg Time</th>
-                        <th style="padding:10px;text-align:center;">QPM</th>
-                        <th style="padding:10px;text-align:center;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+            let html = `<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 20px 0;">
+                <table style="min-width: 700px; width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background:var(--bg-secondary);">
+                            <th style="padding:10px;text-align:left;${!selectionMode ? 'display:none;' : ''}">
+                                <input type="checkbox" id="select-all-checkbox" onchange="toggleAllCheckboxes(this.checked)" ${!selectionMode ? 'style="display:none;"' : ''}>
+                            </th>
+                            <th style="padding:10px;text-align:left;">Date</th>
+                            <th style="padding:10px;text-align:left;">Preset</th>
+                            <th style="padding:10px;text-align:center;">Score</th>
+                            <th style="padding:10px;text-align:center;">Accuracy</th>
+                            <th style="padding:10px;text-align:center;">Avg Time</th>
+                            <th style="padding:10px;text-align:center;">QPM</th>
+                            <th style="padding:10px;text-align:center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
                 
             if (sessions.length === 0) {
                 html += `<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--accent-gray);">No sessions yet. Start practicing!</td></tr>`;
@@ -2837,7 +3016,7 @@
                     `;
                 });
             }
-            html += `</tbody></table>`;
+            html += `</tbody></table></div>`;
             container.innerHTML = html;
         }
 
@@ -3083,6 +3262,19 @@
             // Start the recursive naming loop
             askForName(config, "Enter a name for this preset:");
         });
+        // ===== PREVENT IOS KEYBOARD SCROLL & MOVE CONTENT UP =====
+        const answerInputEl = document.getElementById("answer-input");
+        answerInputEl.addEventListener("focus", function() {
+            document.body.classList.add("keyboard-active");
+            window.scrollTo(0, 0);
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+        });
+        answerInputEl.addEventListener("blur", function() {
+            document.body.classList.remove("keyboard-active");
+            window.scrollTo(0, 0);
+            document.body.scrollTop = 0;
+        });
 
         // ===== AUTO ADVANCE & KEYDOWN ===== 
         document.getElementById("answer-input").addEventListener("input", function(e) {
@@ -3112,8 +3304,11 @@
                 this.value = "";
                 document.getElementById("question-display").textContent = nextQuestion.display;
                 questionStartTime = Date.now();
-            } else { endSession(); }
-            this.focus();
+                this.focus();
+            } else { 
+                endSession(); 
+                return; // Added return to prevent focusing a hidden input
+            }
         });
 
         document.getElementById("answer-input").addEventListener("keydown", function(e) {
@@ -3129,8 +3324,11 @@
                 if (nextQuestion) {
                     document.getElementById("question-display").textContent = nextQuestion.display;
                     questionStartTime = Date.now();
-                } else { endSession(); }
-                this.focus();
+                    this.focus();
+                } else { 
+                    endSession(); 
+                    return; // Added return to prevent focusing a hidden input
+                }
             }
         });
 
