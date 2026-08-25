@@ -74,9 +74,13 @@ Tip: Use the **Custom** tab to build your own sessions, then save them as preset
 - **Drag and Drop:** SortableJS
 - **Storage:** Browser LocalStorage (No backend required)
 
+## Live Demo
+
+Try the app instantly: **[Math²](https://mathsquared.netlify.app/)**
+
 ## Getting Started
 
-### Option 1: Run Locally
+Run the app locally on your machine:
 
 ```bash
 # Clone the repository
@@ -86,5 +90,5 @@ git clone https://github.com/Emilyyy-Ng/math-squared.git
 cd math-squared
 
 # Open index.html in your browser
-# For full PWA features, use a local server:
+# For full PWA features (offline support, installation), use a local server:
 npx serve
