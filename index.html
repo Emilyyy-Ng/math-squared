@@ -11,13 +11,13 @@
     <meta name="apple-mobile-web-app-title" content="Math²">
 
     <!-- iPhone / iOS App Icon -->
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
 
     <!-- Android / Desktop PWA Manifest -->
     <link rel="manifest" href="manifest.json">
 
     <!-- Browser Tab Favicon -->
-    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="icon" type="image/png" href="images/icon-192.png">
 
     <!-- Theme Color for mobile browser address bar -->
     <meta name="theme-color" content="#1a1a2e">
@@ -1362,13 +1362,19 @@
                 <select id="performance-filter" style="background:var(--bg-secondary);color:var(--text-primary);padding:10px;border-radius:8px;border:1px solid var(--accent-gray-dark);flex:1;min-width:150px;font-size:var(--font-sm);">
                     <option value="all">All Sessions</option>
                     <option value="zetamac">Zetamac</option>
-                    <option value="eleven">×/÷ by 11</option>
-                    <option value="twelve">×/÷ by 12</option>
+                    <option value="optiver">Optiver 80 in 8</option>
+                    <option value="mult-2x2">Hard Multiplication</option>
+                    <option value="hard-div">Hard Division</option>
                     <option value="carry">Carry Addition</option>
                     <option value="borrow">Borrow Subtraction</option>
-                    <option value="optiver">Optiver 80 in 8</option>
                     <option value="squares">Squares</option>
+                    <option value="cubes">Cubes</option>
+                    <option value="sqrt">Square Roots</option>
+                    <option value="fractions">Fractions</option>
+                    <option value="dec-perc">Decimals & Percentages</option>
                     <option value="large-addition">Large Addition</option>
+                    <option value="eleven">×/÷ by 11</option>
+                    <option value="twelve">×/÷ by 12</option>
                 </select>
 
                 <select id="metric-selector" style="background:var(--bg-secondary);color:var(--text-primary);padding:10px;border-radius:8px;border:1px solid var(--accent-gray-dark);flex:1;min-width:150px;font-size:var(--font-sm);">
@@ -1429,7 +1435,17 @@
                 this.SESSION_PREFIX = "session_";
                 this.PRESET_PREFIX = "preset_";
                 this.HOME_LAYOUT_KEY = "home_layout"; // Stores array of IDs
-                this.DEFAULT_LAYOUT = ['zetamac', 'eleven', 'twelve', 'carry', 'borrow', 'optiver', 'squares', 'cubes', 'sqrt', 'hard-mult', 'dec-perc', 'large-addition'];
+                this.DEFAULT_LAYOUT = [
+                    'zetamac', 
+                    'optiver', 
+                    'mult-2x2', 
+                    'hard-div', 
+                    'carry', 
+                    'borrow', 
+                    'squares', 
+                    'fractions', 
+                    'dec-perc'
+                ];
                 this.initializeStore(); 
             }
             
@@ -2163,7 +2179,10 @@
         function getPresetConfig(presetName) {
             const configs = {
                 "zetamac": {
-                    presetName: "Zetamac Simulation", timeLimit: 120, unlimited: true, autoAdvance: true,
+                    presetName: "Zetamac Simulation", 
+                    timeLimit: 120, 
+                    unlimited: true, 
+                    autoAdvance: true,
                     operations: {
                         addition: { op1Min: 2, op1Max: 100, op2Min: 2, op2Max: 100, shuffle: false },
                         subtraction: { op1Min: 2, op1Max: 100, op2Min: 2, op2Max: 100, neg: false },
@@ -2171,63 +2190,133 @@
                         division: { op1Min: 2, op1Max: 100, op2Min: 2, op2Max: 12 }
                     }
                 },
-                "eleven": {
-                    presetName: "Multiplication & Division by 11", timeLimit: 60, unlimited: true, autoAdvance: true,
-                    operations: {
-                        multiplication: { op1Min: 11, op1Max: 999, op2Min: 11, op2Max: 11, shuffle: true },
-                        division: { op1Min: 121, op1Max: 999, op2Min: 11, op2Max: 11 }
-                    }
-                },
-                "twelve": {
-                    presetName: "Multiplication & Division by 12", timeLimit: 60, unlimited: true, autoAdvance: true,
-                    operations: {
-                        multiplication: { op1Min: 2, op1Max: 100, op2Min: 12, op2Max: 12, shuffle: true },
-                        division: { op1Min: 24, op1Max: 1200, op2Min: 12, op2Max: 12 }
-                    }
-                },
-                "carry": {
-                    presetName: "Carry Addition", timeLimit: 60, unlimited: true, autoAdvance: true,
-                    operations: { carry: { op1Min: 10, op1Max: 200, op2Min: 10, op2Max: 200, shuffle: true } }
-                },
-                "borrow": {
-                    presetName: "Subtraction with Borrowing", timeLimit: 60, unlimited: true, autoAdvance: true,
-                    operations: { borrow: { op1Min: 10, op1Max: 999, op2Min: 10, op2Max: 999, neg: true } }
-                },
                 "optiver": {
-                    presetName: "Optiver 80 in 8", timeLimit: 480, unlimited: false, autoAdvance: false, totalQuestions: 80,
-                    penalty: 1, // Hardcoded -1 point for Optiver
+                    presetName: "Optiver 80 in 8", 
+                    timeLimit: 480, 
+                    unlimited: false, 
+                    autoAdvance: false, 
+                    totalQuestions: 80,
+                    penalty: 1, 
+                    mcqMode: false, // Optiver uses input mode
                     operations: {
-                        addition: { op1Min: 1, op1Max: 999, op2Min: 1, op2Max: 999, shuffle: true },
-                        subtraction: { op1Min: 1, op1Max: 999, op2Min: 1, op2Max: 999, neg: false },
-                        multiplication: { op1Min: 1, op1Max: 99, op2Min: 1, op2Max: 99, shuffle: true },
-                        division: { op1Min: 1, op1Max: 9999, op2Min: 1, op2Max: 99 },
+                        addition: { op1Min: 10, op1Max: 999, op2Min: 10, op2Max: 999, shuffle: true },
+                        subtraction: { op1Min: 10, op1Max: 999, op2Min: 10, op2Max: 999, neg: false },
+                        multiplication: { op1Min: 2, op1Max: 99, op2Min: 2, op2Max: 25, shuffle: true },
+                        division: { op1Min: 100, op1Max: 9999, op2Min: 2, op2Max: 25 },
                         decimals: { op1Min: 1, op1Max: 99, op2Min: 1, op2Max: 99 },
                         percentages: {}
                     }
                 },
-                "squares": {
-                    presetName: "Squares", timeLimit: 120, unlimited: true, autoAdvance: true,
-                    operations: { squares: { min: 2, max: 99 } }
+                "mult-2x2": {
+                    presetName: "Hard Multiplication (2x2)", 
+                    timeLimit: 120, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: { 
+                        multiplication: { op1Min: 11, op1Max: 99, op2Min: 11, op2Max: 99, shuffle: true } 
+                    }
                 },
-                "large-addition": {
-                    presetName: "Large Addition", timeLimit: 120, unlimited: true, autoAdvance: true,
-                    operations: { addition: { op1Min: 100, op1Max: 9999, op2Min: 100, op2Max: 9999, shuffle: true } }
+                "hard-div": {
+                    presetName: "Hard Division (2-digit divisor)", 
+                    timeLimit: 120, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: { 
+                        division: { op1Min: 100, op1Max: 9999, op2Min: 11, op2Max: 99 } 
+                    }
+                },
+                "fractions": {
+                    presetName: "Fractions Add/Sub", 
+                    timeLimit: 120, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: { 
+                        fractions: {} 
+                    }
+                },
+                "carry": {
+                    presetName: "Carry Addition (3-digit)", 
+                    timeLimit: 60, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: { 
+                        carry: { op1Min: 100, op1Max: 999, op2Min: 100, op2Max: 999, shuffle: true } 
+                    }
+                },
+                "borrow": {
+                    presetName: "Subtraction with Borrowing (3-digit)", 
+                    timeLimit: 60, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: { 
+                        borrow: { op1Min: 100, op1Max: 999, op2Min: 100, op2Max: 999, neg: false } 
+                    }
+                },
+                "squares": {
+                    presetName: "Squares (up to 50)", 
+                    timeLimit: 120, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: { 
+                        squares: { min: 2, max: 50 } 
+                    }
                 },
                 "cubes": {
-                    presetName: "Cubes", timeLimit: 120, unlimited: true, autoAdvance: true,
-                    operations: { cubes: { min: 2, max: 20 } }
+                    presetName: "Cubes (up to 20)", 
+                    timeLimit: 120, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: { 
+                        cubes: { min: 2, max: 20 } 
+                    }
                 },
                 "sqrt": {
-                    presetName: "Square Roots", timeLimit: 120, unlimited: true, autoAdvance: true,
-                    operations: { sqrt: { min: 2, max: 30 } }
-                },
-                "hard-mult": {
-                    presetName: "Hard Multiplication (13-19)", timeLimit: 120, unlimited: true, autoAdvance: true,
-                    operations: { multiplication: { op1Min: 13, op1Max: 19, op2Min: 13, op2Max: 19, shuffle: true } }
+                    presetName: "Square Roots (up to 40²)", 
+                    timeLimit: 120, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: { 
+                        sqrt: { min: 2, max: 40 } 
+                    }
                 },
                 "dec-perc": {
-                    presetName: "Decimals & Percentages", timeLimit: 120, unlimited: true, autoAdvance: true,
-                    operations: { decimals: {}, percentages: {} }
+                    presetName: "Decimals & Percentages", 
+                    timeLimit: 120, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: { 
+                        decimals: {}, 
+                        percentages: {} 
+                    }
+                },
+                "large-addition": {
+                    presetName: "Large Addition (4-digit)", 
+                    timeLimit: 120, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: { 
+                        addition: { op1Min: 1000, op1Max: 9999, op2Min: 1000, op2Max: 9999, shuffle: true } 
+                    }
+                },
+                "eleven": {
+                    presetName: "Multiplication & Division by 11", 
+                    timeLimit: 60, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: {
+                        multiplication: { op1Min: 11, op1Max: 999, op2Min: 11, op2Max: 11, shuffle: true },
+                        division: { op1Min: 121, op1Max: 9999, op2Min: 11, op2Max: 11 }
+                    }
+                },
+                "twelve": {
+                    presetName: "Multiplication & Division by 12", 
+                    timeLimit: 60, 
+                    unlimited: true, 
+                    autoAdvance: true,
+                    operations: {
+                        multiplication: { op1Min: 2, op1Max: 100, op2Min: 12, op2Max: 12, shuffle: true },
+                        division: { op1Min: 24, op1Max: 9999, op2Min: 12, op2Max: 12 }
+                    }
                 }
             };
             return configs[presetName] || configs["zetamac"];
@@ -2373,17 +2462,19 @@
             } else {
                 const presetNames = {
                     'zetamac': { title: 'Zetamac Simulation', desc: '2 min · All operations' },
-                    'eleven': { title: 'Multiplication & Division by 11', desc: '1 min · ×/÷ by 11' },
-                    'twelve': { title: 'Multiplication & Division by 12', desc: '1 min · ×/÷ by 12' },
-                    'carry': { title: 'Carry Addition', desc: '1 min · 2-3 digit addition' },
-                    'borrow': { title: 'Subtraction with Borrowing', desc: '1 min · 2-3 digit subtraction' },
-                    'optiver': { title: 'Optiver 80 in 8', desc: '8 min · 80 questions' },
-                    'squares': { title: 'Squares', desc: '2 mins · 2-99²' },
+                    'optiver': { title: 'Optiver 80 in 8', desc: '8 min · 80 questions · -1 penalty' },
+                    'mult-2x2': { title: 'Hard Multiplication', desc: '2 mins · 11-99 × 11-99' },
+                    'hard-div': { title: 'Hard Division', desc: '2 mins · 2-digit divisors' },
+                    'carry': { title: 'Carry Addition', desc: '1 min · 3-digit addition' },
+                    'borrow': { title: 'Borrow Subtraction', desc: '1 min · 3-digit subtraction' },
+                    'squares': { title: 'Squares', desc: '2 mins · 2-50²' },
                     'cubes': { title: 'Cubes', desc: '2 mins · 2-20³' },                   
-                    'sqrt': { title: 'Square Roots', desc: '2 mins · Up to 30²' },       
-                    'hard-mult': { title: 'Hard Multiplication', desc: '2 mins · 13-19 range' },
+                    'sqrt': { title: 'Square Roots', desc: '2 mins · Up to 40²' },       
+                    'fractions': { title: 'Fractions', desc: '2 mins · Add & Subtract' },
                     'dec-perc': { title: 'Decimals & Percentages', desc: '2 mins · Mental conversions' }, 
-                    'large-addition': { title: 'Large Addition', desc: '2 mins · 3-4 digit addition' }
+                    'large-addition': { title: 'Large Addition', desc: '2 mins · 4-digit addition' },
+                    'eleven': { title: '×/÷ by 11', desc: '1 min · Speed drills' },
+                    'twelve': { title: '×/÷ by 12', desc: '1 min · Speed drills' }
                 };
                 const preset = presetNames[presetId];
                 if (!preset) return '';
@@ -2526,17 +2617,19 @@
             // Default presets that are not on Home
             const defaultPresetMap = {
                 'zetamac': 'Zetamac Simulation',
-                'eleven': 'Multiplication & Division by 11',
-                'twelve': 'Multiplication & Division by 12',
-                'carry': 'Carry Addition',
-                'borrow': 'Subtraction with Borrowing',
                 'optiver': 'Optiver 80 in 8',
-                'squares': 'Squares',
-                'cubes': 'Cubes',                     
-                'sqrt': 'Square Roots',             
-                'hard-mult': 'Hard Multiplication',   
+                'mult-2x2': 'Hard Multiplication (2x2)',
+                'hard-div': 'Hard Division (2-digit divisor)',
+                'carry': 'Carry Addition (3-digit)',
+                'borrow': 'Subtraction with Borrowing (3-digit)',
+                'squares': 'Squares (up to 50)',
+                'cubes': 'Cubes (up to 20)',                     
+                'sqrt': 'Square Roots (up to 40²)',             
+                'fractions': 'Fractions Add/Sub',
                 'dec-perc': 'Decimals & Percentages',
-                'large-addition': 'Large Addition'
+                'large-addition': 'Large Addition (4-digit)',
+                'eleven': 'Multiplication & Division by 11',
+                'twelve': 'Multiplication & Division by 12'
             };
             
             const availableDefaults = Object.keys(defaultPresetMap).filter(key => !layout.includes(key));
@@ -3057,10 +3150,20 @@
             let sessions = dataStore.getSessions();
             if (filter !== "all") {
                 const filterMap = {
-                    "zetamac": "Zetamac Simulation", "eleven": "Multiplication & Division by 11", 
-                    "twelve": "Multiplication & Division by 12", "carry": "Carry Addition", 
-                    "borrow": "Subtraction with Borrowing", "optiver": "Optiver 80 in 8", 
-                    "squares": "Squares", "large-addition": "Large Addition"  
+                    "zetamac": "Zetamac Simulation",
+                    "optiver": "Optiver 80 in 8",
+                    "mult-2x2": "Hard Multiplication (2x2)",
+                    "hard-div": "Hard Division (2-digit divisor)",
+                    "carry": "Carry Addition (3-digit)",
+                    "borrow": "Subtraction with Borrowing (3-digit)",
+                    "squares": "Squares (up to 50)",
+                    "cubes": "Cubes (up to 20)",
+                    "sqrt": "Square Roots (up to 40²)",
+                    "fractions": "Fractions Add/Sub",
+                    "dec-perc": "Decimals & Percentages",
+                    "large-addition": "Large Addition (4-digit)",
+                    "eleven": "Multiplication & Division by 11",
+                    "twelve": "Multiplication & Division by 12"
                 };
                 const presetName = filterMap[filter];
                 if (presetName) sessions = sessions.filter(s => s.presetName === presetName);
