@@ -1,3 +1,17 @@
-*.DS_Store
+# OS Generated Files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE Files
+.vscode/
+.idea/
+
+# Environment & Secrets
+.env
+
+# Node Dependencies
 node_modules/
+
+# Data & Logs
 data/exports/*.csv
+*.log
