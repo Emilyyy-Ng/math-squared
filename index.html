@@ -1426,6 +1426,80 @@
             };
         }
 
+        /* =====================================================================
+        Num — single source of truth for answer generation, checking, display.
+        Contract: every stored `answer` is a canonical string:
+        "84", "30.7", "-5", "7/18". Never a raw float.
+        ===================================================================== */
+        const Num = (() => {
+        const MAX_DECIMALS = 6;
+        const FRACTION_TOL = 0.005;
+
+        const FRACTION_RE = /^([+-]?\d+)\s*\/\s*([+-]?\d+)$/;
+        const DECIMAL_RE  = /^[+-]?(\d+(\.\d*)?|\.\d+)$/;
+
+        function parseAnswer(raw) {
+            const s = String(raw ?? "").trim();
+            if (s === "") return null;
+
+            const f = s.match(FRACTION_RE);
+            if (f) {
+            let n = parseInt(f[1], 10), d = parseInt(f[2], 10);
+            if (d === 0) return null;
+            if (d < 0) { n = -n; d = -d; }
+            return { kind: "fraction", n, d, value: n / d };
+            }
+            if (DECIMAL_RE.test(s)) return { kind: "decimal", value: parseFloat(s) };
+            return null;
+        }
+
+        function trimZeros(s) {
+            if (!s.includes(".")) return s;
+            const t = s.replace(/0+$/, "").replace(/\.$/, "");
+            return t === "-0" ? "0" : t;
+        }
+
+        function canonical(value, decimals = 2) {
+            if (!Number.isFinite(value)) return null;
+            return trimZeros(value.toFixed(Math.min(decimals, MAX_DECIMALS)));
+        }
+
+        function decimalPlaces(str) {
+            const i = String(str).indexOf(".");
+            return i === -1 ? 0 : String(str).length - i - 1;
+        }
+
+        function canonicalizeStored(str) {
+            const s = String(str ?? "").trim();
+            if (!DECIMAL_RE.test(s)) return s;
+            return trimZeros(parseFloat(s).toFixed(Math.min(decimalPlaces(s), MAX_DECIMALS)));
+        }
+
+        function checkAnswer(expectedStr, userInput) {
+            const expected = parseAnswer(expectedStr);
+            const input    = parseAnswer(userInput);
+            if (!expected || !input) return false;
+
+            if (expected.kind === "fraction" && input.kind === "fraction") {
+            return input.n * expected.d === expected.n * input.d;
+            }
+
+            if (expected.kind === "fraction") {
+            return Math.abs(input.value - expected.value) <= FRACTION_TOL;
+            }
+
+            const tol = 1e-9 * Math.max(1, Math.abs(expected.value), Math.abs(input.value));
+            return Math.abs(input.value - expected.value) <= tol;
+        }
+
+        function format(value, decimals = 2) {
+            if (!Number.isFinite(value)) return "—";
+            return trimZeros(value.toFixed(decimals));
+        }
+
+        return { parseAnswer, canonical, canonicalizeStored, checkAnswer, format };
+        })();
+
         // ===== DATASTORE =====
         const INFINITY_TRIGGER = 210;
         class DataStore {
@@ -1926,63 +2000,89 @@
                 const ops = ['+', '-', '×'];
                 const op = ops[Math.floor(Math.random() * ops.length)];
                 
-                let op1, op2, ans;
-                let decPlaces1, decPlaces2;
+                let displayOp1, displayOp2, ans;
 
                 if (op === '×') {
-                    // RESTRICT MULTIPLICATION: Keep it mentally manageable
                     const formatChoice = Math.floor(Math.random() * 3);
-                    if (formatChoice === 0) { // e.g., 12.3 × 4.5
-                        decPlaces1 = 1; decPlaces2 = 1;
-                        op1 = this.randomInt(10, 250) / 10;
-                        op2 = this.randomInt(10, 250) / 10;
-                    } else if (formatChoice === 1) { // e.g., 25 × 3.4
-                        decPlaces1 = 0; decPlaces2 = 1;
-                        op1 = this.randomInt(2, 50);
-                        op2 = this.randomInt(10, 350) / 10;
-                    } else { // e.g., 50 × 0.75
-                        decPlaces1 = 0; decPlaces2 = 2;
-                        op1 = this.randomInt(2, 50);
-                        op2 = this.randomInt(5, 99) / 100;
+                    if (formatChoice === 0) { // 1 decimal × 1 decimal
+                        const a = this.randomInt(10, 250);
+                        const b = this.randomInt(10, 250);
+                        displayOp1 = a / 10;
+                        displayOp2 = b / 10;
+                        ans = (a * b) / 100;
+                    } else if (formatChoice === 1) { // integer × 1 decimal
+                        const a = this.randomInt(2, 50);
+                        const b = this.randomInt(10, 350);
+                        displayOp1 = a;
+                        displayOp2 = b / 10;
+                        ans = (a * b) / 10;
+                    } else { // integer × 2 decimal
+                        const a = this.randomInt(2, 50);
+                        const b = this.randomInt(5, 99);
+                        displayOp1 = a;
+                        displayOp2 = b / 100;
+                        ans = (a * b) / 100;
                     }
-                    ans = op1 * op2;
-                    ans = Math.round(ans * 100) / 100;
                 } else {
-                    // ADDITION & SUBTRACTION: 1 or 2 decimals 
-                    decPlaces1 = Math.random() > 0.5 ? 1 : 2;
-                    decPlaces2 = Math.random() > 0.5 ? 1 : 2;
-                    op1 = this.randomInt(op1Min * Math.pow(10, decPlaces1), Math.min(op1Max, 99) * Math.pow(10, decPlaces1)) / Math.pow(10, decPlaces1);
-                    op2 = this.randomInt(op2Min * Math.pow(10, decPlaces2), Math.min(op2Max, 99) * Math.pow(10, decPlaces2)) / Math.pow(10, decPlaces2);
+                    const decPlaces1 = Math.random() > 0.5 ? 1 : 2;
+                    const decPlaces2 = Math.random() > 0.5 ? 1 : 2;
+                    const scale1 = Math.pow(10, decPlaces1);
+                    const scale2 = Math.pow(10, decPlaces2);
+                    
+                    const a = this.randomInt(
+                        op1Min * scale1,
+                        Math.min(op1Max, 99) * scale1
+                    );
+                    const b = this.randomInt(
+                        op2Min * scale2,
+                        Math.min(op2Max, 99) * scale2
+                    );
+                    
+                    displayOp1 = a / scale1;
+                    displayOp2 = b / scale2;
                     
                     if (op === '-') {
-                        if (op1 < op2) [op1, op2] = [op2, op1];
-                        ans = op1 - op2;
+                        if (displayOp1 < displayOp2) {
+                            // Swap to avoid negatives
+                            const temp = displayOp1;
+                            displayOp1 = displayOp2;
+                            displayOp2 = temp;
+                        }
+                        ans = displayOp1 - displayOp2;
                     } else {
-                        ans = op1 + op2;
+                        ans = displayOp1 + displayOp2;
                     }
-                    ans = Math.round(ans * 100) / 100;
                 }
-
-                return { question: `${op1} ${op} ${op2}`, answer: ans.toString(), operation: "decimals", display: `${op1} ${op} ${op2} =` };
+                
+                const cleanAnswer = Num.canonical(ans, 2);
+                
+                return { 
+                    question: `${displayOp1} ${op} ${displayOp2}`, 
+                    answer: cleanAnswer, 
+                    operation: "decimals", 
+                    display: `${displayOp1} ${op} ${displayOp2} =` 
+                };
             }
 
             static generatePercentages() {
-                // Expanded to include eighths, but paired with clean bases
                 const percents = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 12.5, 37.5, 62.5];
                 const p = percents[Math.floor(Math.random() * percents.length)];
                 
                 let base;
                 if (p === 12.5 || p === 37.5 || p === 62.5) {
-                    // If it's an eighth, make the base a multiple of 8 for a clean terminating decimal
                     base = this.randomInt(2, 50) * 8;
                 } else {
-                    // Keep the base a reasonable size (up to 500)
                     base = this.randomInt(10, 500);
                 }
                 
-                const ans = (p / 100) * base;
-                return { question: `${p}% of ${base}`, answer: ans.toString(), operation: "percentages", display: `${p}% of ${base} =` };
+                return {
+                    question: `${p}% of ${base}`,
+                    answer: Num.canonical((p * base) / 100, 2),
+                    operation: "percentages",
+                    display: `${p}% of ${base} =`  
+                };
             }
+
             static generateCubes(min=2, max=20) {
                 const base = this.randomInt(min, max);
                 const answer = base * base * base;
@@ -2073,28 +2173,18 @@
                 const question = this.getCurrentQuestion();
                 if (!question) return null;
                 
-                let isCorrect = false;
-                if (question.operation === "fractions") {
-                    const userStr = String(userAnswer).trim();
-                    if (userStr.includes('/')) {
-                        const parts = userStr.split('/').map(Number);
-                        if (parts.length === 2 && parts[1] !== 0) {
-                            const g = QuestionGenerator.gcd(parts[0], parts[1]);
-                            isCorrect = `${parts[0]/g}/${parts[1]/g}` === question.answer;
-                        }
-                    } else if (question.isTerminating) {
-                        const dec = parseFloat(userStr);
-                        if (!isNaN(dec)) isCorrect = Math.abs(dec - question.decimalAnswer) < 0.0001;
-                    }
-                } else {
-                    // Use tolerance for floating point decimals
-                    isCorrect = Math.abs(parseFloat(userAnswer) - parseFloat(question.answer)) < 0.0001;
-                }
-
+                // Use Num.checkAnswer for consistent comparison
+                const isCorrect = Num.checkAnswer(question.answer, userAnswer);
+                
                 const timeTaken = this.startTime ? (Date.now() - this.startTime) / 1000 : 0;
                 const result = {
-                    question: question.display, userAnswer, correctAnswer: question.answer,
-                    isCorrect, timeSeconds: timeTaken, operation: question.operation, timestamp: new Date().toISOString()
+                    question: question.display,
+                    userAnswer: userAnswer,
+                    correctAnswer: Num.canonicalizeStored(question.answer), // Clean for display
+                    isCorrect,
+                    timeSeconds: timeTaken,
+                    operation: question.operation,
+                    timestamp: new Date().toISOString()
                 };
                 this.results.push(result);
                 this.attempted++;
@@ -2103,7 +2193,7 @@
                     this.score++;
                     this.correct++;
                 } else {
-                    this.score -= this.penalty; // Deduct penalty
+                    this.score -= this.penalty;
                 }
                 
                 this.currentIndex++;
@@ -2236,7 +2326,7 @@
                 },
                 "carry": {
                     presetName: "Carry Addition (3-digit)", 
-                    timeLimit: 60, 
+                    timeLimit: 120, 
                     unlimited: true, 
                     autoAdvance: true,
                     operations: { 
@@ -2245,7 +2335,7 @@
                 },
                 "borrow": {
                     presetName: "Subtraction with Borrowing (3-digit)", 
-                    timeLimit: 60, 
+                    timeLimit: 120, 
                     unlimited: true, 
                     autoAdvance: true,
                     operations: { 
@@ -2300,7 +2390,7 @@
                 },
                 "eleven": {
                     presetName: "Multiplication & Division by 11", 
-                    timeLimit: 60, 
+                    timeLimit: 120, 
                     unlimited: true, 
                     autoAdvance: true,
                     operations: {
@@ -2310,7 +2400,7 @@
                 },
                 "twelve": {
                     presetName: "Multiplication & Division by 12", 
-                    timeLimit: 60, 
+                    timeLimit: 120, 
                     unlimited: true, 
                     autoAdvance: true,
                     operations: {
@@ -2461,20 +2551,20 @@
                 desc = 'Custom preset';
             } else {
                 const presetNames = {
-                    'zetamac': { title: 'Zetamac Simulation', desc: '2 min · All operations' },
-                    'optiver': { title: 'Optiver 80 in 8', desc: '8 min · 80 questions · -1 penalty' },
+                    'zetamac': { title: 'Zetamac Simulation', desc: '2 mins · All operations' },
+                    'optiver': { title: 'Optiver 80 in 8', desc: '8 mins · 80 questions' },
                     'mult-2x2': { title: 'Hard Multiplication', desc: '2 mins · 11-99 × 11-99' },
                     'hard-div': { title: 'Hard Division', desc: '2 mins · 2-digit divisors' },
-                    'carry': { title: 'Carry Addition', desc: '1 min · 3-digit addition' },
-                    'borrow': { title: 'Borrow Subtraction', desc: '1 min · 3-digit subtraction' },
+                    'carry': { title: 'Carry Addition', desc: '2 mins · 3-digit addition' },
+                    'borrow': { title: 'Borrow Subtraction', desc: '2 mins · 3-digit subtraction' },
                     'squares': { title: 'Squares', desc: '2 mins · 2-50²' },
                     'cubes': { title: 'Cubes', desc: '2 mins · 2-20³' },                   
                     'sqrt': { title: 'Square Roots', desc: '2 mins · Up to 40²' },       
                     'fractions': { title: 'Fractions', desc: '2 mins · Add & Subtract' },
                     'dec-perc': { title: 'Decimals & Percentages', desc: '2 mins · Mental conversions' }, 
                     'large-addition': { title: 'Large Addition', desc: '2 mins · 4-digit addition' },
-                    'eleven': { title: '×/÷ by 11', desc: '1 min · Speed drills' },
-                    'twelve': { title: '×/÷ by 12', desc: '1 min · Speed drills' }
+                    'eleven': { title: '×/÷ by 11', desc: '2 mins · Speed drills' },
+                    'twelve': { title: '×/÷ by 12', desc: '2 mins · Speed drills' }
                 };
                 const preset = presetNames[presetId];
                 if (!preset) return '';
@@ -3006,31 +3096,41 @@
             const secs = secondsRemaining % 60;
             document.getElementById("timer-display").textContent = `⏱️ ${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
         }
-
+                
         function renderMCQOptions(question) {
             const mcqDiv = document.getElementById("mcq-options");
             document.querySelector(".question-input-row").style.display = "none"; 
             mcqDiv.style.display = "grid";
             
-            let options = new Set([String(question.answer)]);
+            // Get the canonical correct answer
+            const correct = Num.canonicalizeStored(question.answer);
+            let options = new Set([correct]);
             let attempts = 0;
+            
             while (options.size < 4 && attempts < 50) {
                 attempts++;
                 let distractor;
                 if (question.operation === "fractions") {
                     const denoms = [2, 3, 4, 5, 8];
                     const d = denoms[Math.floor(Math.random() * denoms.length)];
-                    const n = Math.floor(Math.random() * (d - 1)) + 1; // avoid 0
+                    const n = Math.floor(Math.random() * (d - 1)) + 1;
                     distractor = `${n}/${d}`;
                 } else if (question.operation === "decimals" || question.operation === "percentages") {
                     const base = parseFloat(question.answer);
                     const offset = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 1);
-                    distractor = String(parseFloat((base + offset).toFixed(2))); // Clean up trailing zeros
+                    distractor = Num.canonical(base + offset, 2);
                 } else {
                     const offset = QuestionGenerator.randomInt(1, 20) * (Math.random() > 0.5 ? 1 : -1);
                     distractor = String(parseInt(question.answer) + offset);
                 }
-                if (String(distractor) !== String(question.answer)) options.add(String(distractor));
+                
+                // Only add if it's not the correct answer and not already in options
+                if (distractor !== null && 
+                    distractor !== correct && 
+                    !Num.checkAnswer(correct, distractor) &&
+                    !options.has(distractor)) {
+                    options.add(distractor);
+                }
             }
             
             // Fallback if we couldn't generate 4 unique options
@@ -3044,22 +3144,26 @@
                 btn.textContent = shuffled[i];
                 btn.dataset.value = shuffled[i];
                 btn.classList.remove("wrong-flash", "correct-flash");
-                btn.disabled = false; // Re-enable button for new question
-                btn.onpointerdown = () => handleMCQClick(shuffled[i], btn); // Instant response
+                btn.disabled = false;
+                btn.onpointerdown = () => handleMCQClick(shuffled[i], btn);
             });
         }
 
         function handleMCQClick(selectedValue, btn) {
-            if (!currentSession || btn.disabled) return; // Ignore if already tapped
-            btn.disabled = true; // Disable immediately to prevent double taps
-            const correctValue = currentSession.getCurrentQuestion().answer;
-            if (String(selectedValue) === String(correctValue)) {
+            if (!currentSession || btn.disabled) return;
+            btn.disabled = true;
+            const question = currentSession.getCurrentQuestion();
+            const correctAnswer = question.answer;
+            
+            // Use Num.checkAnswer for consistent comparison
+            const isCorrect = Num.checkAnswer(correctAnswer, selectedValue);
+            
+            if (isCorrect) {
                 btn.classList.add("correct-flash");
             } else {
                 btn.classList.add("wrong-flash");
             }
             
-            // Slight delay to let the user see the color flash
             setTimeout(() => {
                 const result = currentSession.submitAnswer(selectedValue);
                 if (result) {
@@ -3359,11 +3463,11 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-label">Accuracy</div>
-                        <div class="stat-card-value" style="color:${stats.accuracy >= 80 ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${stats.accuracy.toFixed(0)}%</div>
+                        <div class="stat-card-value" style="color:${stats.accuracy >= 80 ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${Num.format(stats.accuracy, 0)}%</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-label">Avg Time</div>
-                        <div class="stat-card-value">${stats.avgTime.toFixed(2)}s</div>
+                        <div class="stat-card-value">${Num.format(stats.avgTime, 2)}s</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-label">QPM</div>
@@ -3424,10 +3528,10 @@
                                     <tr style="border-bottom:1px solid var(--accent-gray-dark);">
                                         <td>${index + 1}</td>
                                         <td>${r.question}</td>
-                                        <td class="text-center">${r.userAnswer}</td>
-                                        <td class="text-center">${r.correctAnswer}</td>
+                                        <td class="text-center">${Num.canonicalizeStored(r.userAnswer)}</td>
+                                        <td class="text-center">${Num.canonicalizeStored(r.correctAnswer)}</td>
                                         <td class="text-center" style="color:${r.isCorrect ? 'var(--accent-green-bright)' : 'var(--accent-orange)'}">${r.isCorrect ? "✓" : "✗"}</td>
-                                        <td class="text-center">${r.timeSeconds.toFixed(2)}s</td>
+                                        <td class="text-center">${Num.format(r.timeSeconds, 2)}s</td>
                                     </tr>
                                 `).join("")}
                             </tbody>
@@ -3792,14 +3896,8 @@
             const question = currentSession.getCurrentQuestion();
             if (!question) { endSession(); return; }
             
-            let isPotentialCorrect = false;
-            // For basic integer operations, auto-advance as soon as the number matches
-            if (["addition", "subtraction", "multiplication", "division", "squares", "carry", "borrow"].includes(question.operation)) {
-                if (Number(answer) === question.answer) isPotentialCorrect = true;
-            } else {
-                // For fractions/decimals/percentages, only auto-advance if exact string matches (to avoid premature advancing on partial decimal input)
-                if (String(answer) === String(question.answer)) isPotentialCorrect = true;
-            }
+            // ONE LINE to check if the answer is correct - handles ALL operations!
+            const isPotentialCorrect = Num.checkAnswer(question.answer, answer);
             
             if (!isPotentialCorrect) return;
             
@@ -3814,7 +3912,7 @@
                 this.focus();
             } else { 
                 endSession(); 
-                return; // Added return to prevent focusing a hidden input
+                return;
             }
         });
 
