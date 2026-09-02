@@ -527,6 +527,25 @@
         height: 18px;
         cursor: pointer;
     }
+    /* ===== Sub-Options (Generic) ===== */
+    .sub-options {
+        display: none;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding-left: 28px;      /* aligns under the parent label text */
+        margin-top: -8px;        /* tightens the gap */
+        margin-bottom: -8px;
+    }
+    .sub-options.visible {
+        display: flex;
+    }
+    .sub-options label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: var(--font-sm);
+    }
 
     .right-column {
         display: flex;
@@ -1142,20 +1161,17 @@
                         <h3 style="margin-bottom:20px;">Operations</h3>
                         <div class="operations-list">
                             <label><input type="checkbox" name="ops" value="addition" checked onchange="toggleAddition();">Addition +</label>
-                            <div id="addition-controls" style="display:block;margin-left:30px;">
-                                <!-- Force Carry -->
-                                <label style="display:flex;align-items:center;font-size:var(--font-sm);">
+                            <div id="addition-controls" class="sub-options visible">
+                                <label>
                                     <input type="checkbox" id="force-carry">Force Carry
                                 </label>
                             </div>
                             <label><input type="checkbox" name="ops" value="subtraction" onchange="toggleSubtraction();">Subtraction -</label>
-                            <div id="subtraction-controls" style="display:none;margin-left:30px;">
-                                <!-- Allow Negatives -->
-                                <label style="display:flex;align-items:center;font-size:var(--font-sm);margin-bottom:15px;">
+                            <div id="subtraction-controls" class="sub-options">
+                                <label>
                                     <input type="checkbox" id="allow-negatives">Allow Negatives
                                 </label>
-                                <!-- Force Borrow -->
-                                <label style="display:flex;align-items:center;font-size:var(--font-sm);">
+                                <label>
                                     <input type="checkbox" id="force-borrow">Force Borrow
                                 </label>
                             </div>
@@ -1164,29 +1180,45 @@
                             <label><input type="checkbox" name="ops" value="squares">Squares ²</label>
                             <label><input type="checkbox" name="ops" value="cubes">Cubes ³</label>
                             <label><input type="checkbox" name="ops" value="sqrt">Square Roots √</label>
-                            <label><input type="checkbox" name="ops" value="fractions">Fractions</label>
-                            <label><input type="checkbox" name="ops" value="decimals">Decimals</label>
+                            <label style="display:flex;align-items:center;gap:10px;">
+                                <input type="checkbox" name="ops" value="fractions" id="fractions-checkbox" onchange="toggleFractions()">Fractions
+                            </label>
+                            <div id="fractions-sub-options" class="sub-options">
+                                <label><input type="checkbox" id="frac-addition" checked> Addition</label>
+                                <label><input type="checkbox" id="frac-subtraction"> Subtraction</label>
+                                <label><input type="checkbox" id="frac-multiplication"> Multiplication</label>
+                                <label><input type="checkbox" id="frac-division"> Division</label>
+                            </div>
+                            <label style="display:flex;align-items:center;gap:10px;">
+                                <input type="checkbox" name="ops" value="decimals" id="decimals-checkbox" onchange="toggleDecimals()">Decimals
+                            </label>
+                            <div id="decimals-sub-options" class="sub-options">
+                                <label><input type="checkbox" id="dec-addition" checked> Addition</label>
+                                <label><input type="checkbox" id="dec-subtraction"> Subtraction</label>
+                                <label><input type="checkbox" id="dec-multiplication"> Multiplication</label>
+                                <label><input type="checkbox" id="dec-division"> Division</label>
+                            </div>
                             <label><input type="checkbox" name="ops" value="percentages">Percentages</label>
                         </div>
                     </div>
 
                     <div class="right-column">
-                        <!-- Number Ranges -->
-                        <div class="custom-section">
-                            <h3 style="margin-bottom:15px;">Number Ranges</h3>
-                            <div class="ranges-grid">
-                                <div class="range-group">
-                                    <label>Operand 1</label>
-                                    <input style="font-size:12px;" type="number" id="op1-min" value="1">
-                                    <input style="font-size:12px;" type="number" id="op1-max" value="100">
-                                </div>
-                                <div class="range-group">
-                                    <label>Operand 2</label>
-                                    <input style="font-size:12px;" type="number" id="op2-min" value="1">
-                                    <input style="font-size:12px;" type="number" id="op2-max" value="100">
-                                </div>
+                    <!-- Number Ranges -->
+                    <div class="custom-section">
+                        <h3 style="margin-bottom:15px;">Number Ranges</h3>
+                        <div class="ranges-grid">
+                            <div class="range-group">
+                                <label>Operand 1</label>
+                                <input style="font-size:12px;" type="number" id="op1-min" value="1" step="any">
+                                <input style="font-size:12px;" type="number" id="op1-max" value="100" step="any">
+                            </div>
+                            <div class="range-group">
+                                <label>Operand 2</label>
+                                <input style="font-size:12px;" type="number" id="op2-min" value="1" step="any">
+                                <input style="font-size:12px;" type="number" id="op2-max" value="100" step="any">
                             </div>
                         </div>
+                    </div>
 
                         <!-- Time Limit -->
                         <div class="custom-section">
@@ -1769,7 +1801,7 @@
                 const MAX_ATTEMPTS = 50;
                 while (attempts < MAX_ATTEMPTS) {
                     op2 = this.randomInt(op2Min, op2Max);
-                    resultMin = Math.max(1, Math.ceil(op1Min / op2));
+                    resultMin = Math.max(2, Math.ceil(op1Min / op2));
                     resultMax = Math.floor(op1Max / op2);
                     if (resultMax >= resultMin) {
                         result = this.randomInt(resultMin, resultMax);
@@ -1925,14 +1957,30 @@
                 cubes: this.generateCubes,        
                 sqrt: this.generateSquareRoots    
             };
-
+                        
             static generateQuestions(operation, count, config={}) {
                 const questions = [];
                 const generator = this.GENERATOR_MAP[operation];
                 if (!generator) throw new Error(`Unknown operation: ${operation}`);
                 for (let i = 0; i < count; i++) {
-                    const question = generator.bind(this)( ...Object.values(config) );
-                    if (question) questions.push(question);
+                    // Handle decimals with allowedOps
+                    if (operation === 'decimals' && config.allowedOps) {
+                        const question = generator.bind(this)(
+                            config.op1Min,
+                            config.op1Max,
+                            config.op2Min,
+                            config.op2Max,
+                            config.allowedOps
+                        );
+                        if (question) questions.push(question);
+                    } else if (operation === 'fractions' && config.allowedOps) {
+                        const question = generator.bind(this)(config.allowedOps);
+                        if (question) questions.push(question);
+                    } else {
+                        const configValues = Object.values(config);
+                        const question = generator.bind(this)(...configValues);
+                        if (question) questions.push(question);
+                    }
                 }
                 return questions;
             }
@@ -1943,124 +1991,334 @@
                 const config = operations[randomOp];
                 const generator = this.GENERATOR_MAP[randomOp];
                 if (!generator) throw new Error(`Unknown Operation ${randomOp}`);
+                
+                // Handle decimals with allowedOps
+                if (randomOp === 'decimals' && config.allowedOps) {
+                    // Pass the raw min/max values as strings to preserve decimal precision
+                    const rawConfig = {
+                        op1Min: config.op1Min,
+                        op1Max: config.op1Max,
+                        op2Min: config.op2Min,
+                        op2Max: config.op2Max,
+                        allowedOps: config.allowedOps
+                    };
+                    return generator.bind(QuestionGenerator)(
+                        rawConfig.op1Min,
+                        rawConfig.op1Max,
+                        rawConfig.op2Min,
+                        rawConfig.op2Max,
+                        rawConfig.allowedOps
+                    );
+                }
+
+                if (randomOp === 'fractions' && config.allowedOps) {
+                    return generator.bind(QuestionGenerator)(config.allowedOps);
+                }
+
                 const configValues = Object.values(config);
                 return generator.bind(QuestionGenerator)(...configValues);
             }
-
-            static gcd(a, b) { return b === 0 ? Math.abs(a) : this.gcd(b, a % b); }
-
-            static toFractionString(n, d) {
-                if (n === 0) return "0"; // Handle 0 cases cleanly
-                const g = this.gcd(n, d);
-                return `${n/g}/${d/g}`;
-            }
-
-            static generateFractions() {
-                const denoms = [2, 3, 4, 5, 6, 8, 9];
-                const d1 = denoms[Math.floor(Math.random() * denoms.length)];
-                const d2 = denoms[Math.floor(Math.random() * denoms.length)];
-                const n1 = this.randomInt(1, d1 - 1);
-                const n2 = this.randomInt(1, d2 - 1);
-                const ops = ['+', '-'];
+                        
+            static generateFractions(allowedOps = ['+', '-', '×', '÷']) {
+                // If no specific ops allowed, fallback to addition and subtraction
+                const ops = allowedOps.filter(op => ['+', '-', '×', '÷'].includes(op));
+                if (ops.length === 0) ops.push('+', '-');
+                
                 const op = ops[Math.floor(Math.random() * ops.length)];
                 
-                let resN, resD;
-                if (op === '+') { 
-                    resN = (n1 * d2) + (n2 * d1); 
-                    resD = d1 * d2; 
-                } else {
-                    let largerN = n1, largerD = d1, smallerN = n2, smallerD = d2;
-                    if ((n1/d1) < (n2/d2)) { largerN = n2; largerD = d2; smallerN = n1; smallerD = d1; }
-                    resN = (largerN * smallerD) - (smallerN * largerD);
-                    resD = largerD * smallerD;
+                // Fixed ranges for numerators and denominators
+                const numMin = 1, numMax = 12;
+                const denMin = 2, denMax = 12;
+                
+                // Helper: random integer
+                const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+                
+                // Helper: generate a proper fraction (numerator < denominator)
+                const genFraction = () => {
+                    const den = rand(denMin, denMax);
+                    const num = rand(numMin, den - 1);
+                    return { num, den };
+                };
+                
+                // Helper: reduce fraction using GCD
+                const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+                const reduce = (n, d) => {
+                    if (d < 0) { n = -n; d = -d; }
+                    const g = gcd(Math.abs(n), Math.abs(d));
+                    return { num: n / g, den: d / g };
+                };
+                
+                // Helper: format as string
+                const formatFrac = (n, d) => `${n}/${d}`;
+                
+                let q1, q2, resultNum, resultDen, questionStr, displayStr;
+                let attempts = 0;
+                const maxAttempts = 30;
+                
+                while (attempts < maxAttempts) {
+                    attempts++;
+                    q1 = genFraction();
+                    q2 = genFraction();
+                    let n1 = q1.num, d1 = q1.den;
+                    let n2 = q2.num, d2 = q2.den;
+                    let resN, resD;
+                    let valid = true;
                     
-                    const isTerm = resN === 0 || [2, 4, 5, 8, 10].includes(resD / this.gcd(resN, resD));
-                    return { 
-                        question: `${largerN}/${largerD} - ${smallerN}/${smallerD}`, 
-                        answer: this.toFractionString(resN, resD), 
-                        decimalAnswer: resN / resD,
-                        isTerminating: isTerm,
-                        operation: "fractions", 
-                        display: `${largerN}/${largerD} - ${smallerN}/${smallerD} =` 
+                    switch (op) {
+                        case '+':
+                            resN = n1 * d2 + n2 * d1;
+                            resD = d1 * d2;
+                            questionStr = `${n1}/${d1} + ${n2}/${d2}`;
+                            displayStr = `${n1}/${d1} + ${n2}/${d2} =`;
+                            break;
+                        case '-':
+                            // Ensure result is positive (we swap if needed)
+                            if (n1 * d2 < n2 * d1) {
+                                // Swap the fractions so the larger is first
+                                [n1, d1, n2, d2] = [n2, d2, n1, d1];
+                            }
+                            resN = n1 * d2 - n2 * d1;
+                            resD = d1 * d2;
+                            questionStr = `${n1}/${d1} - ${n2}/${d2}`;
+                            displayStr = `${n1}/${d1} - ${n2}/${d2} =`;
+                            break;
+                        case '×':
+                            resN = n1 * n2;
+                            resD = d1 * d2;
+                            questionStr = `${n1}/${d1} × ${n2}/${d2}`;
+                            displayStr = `${n1}/${d1} × ${n2}/${d2} =`;
+                            break;
+                        case '÷':
+                            // Multiply by reciprocal
+                            resN = n1 * d2;
+                            resD = d1 * n2;
+                            questionStr = `${n1}/${d1} ÷ ${n2}/${d2}`;
+                            displayStr = `${n1}/${d1} ÷ ${n2}/${d2} =`;
+                            break;
+                        default:
+                            valid = false;
+                    }
+                    
+                    if (!valid) continue;
+                    
+                    // Reduce the result
+                    const reduced = reduce(resN, resD);
+                    // Ensure denominator is positive
+                    if (reduced.den < 0) { reduced.num = -reduced.num; reduced.den = -reduced.den; }
+                    
+                    // Ensure the answer is not zero (or we can allow zero, but it's fine)
+                    if (reduced.num === 0) continue;
+                    
+                    let answerStr, displayStrFinal;
+                    if (reduced.den === 1) {
+                        answerStr = Num.canonical(reduced.num, 0); // e.g., "3"
+                        displayStrFinal = displayStr.replace(/\s*=\s*$/, '') + ' = '; 
+                    } else {
+                        answerStr = formatFrac(reduced.num, reduced.den);
+                        displayStrFinal = displayStr;
+                    }
+                    return {
+                        question: questionStr,
+                        answer: answerStr,
+                        operation: "fractions",
+                        display: displayStrFinal
                     };
                 }
                 
-                const isTerm = resN === 0 || [2, 4, 5, 8, 10].includes(resD / this.gcd(resN, resD));
-                return { 
-                    question: `${n1}/${d1} + ${n2}/${d2}`, 
-                    answer: this.toFractionString(resN, resD), 
-                    decimalAnswer: resN / resD,
-                    isTerminating: isTerm,
-                    operation: "fractions", 
-                    display: `${n1}/${d1} + ${n2}/${d2} =` 
+                // Fallback: simple addition of two proper fractions that yields a proper fraction
+                // We'll force a known good case: 1/2 + 1/3 = 5/6
+                return {
+                    question: "1/2 + 1/3",
+                    answer: "5/6",
+                    operation: "fractions",
+                    display: "1/2 + 1/3 ="
                 };
             }
 
-            static generateDecimals(op1Min = 1, op1Max = 99, op2Min = 1, op2Max = 99) {
-                const ops = ['+', '-', '×'];
-                const op = ops[Math.floor(Math.random() * ops.length)];
-                
-                let displayOp1, displayOp2, ans;
+            static generateDecimals(op1Min = 1, op1Max = 99, op2Min = 1, op2Max = 99, allowedOps = ['+', '-', '×', '÷']) {
+                // Parse and sanitise ranges
+                const p1Min = parseFloat(op1Min) || 1;
+                const p1Max = parseFloat(op1Max) || 100;
+                const p2Min = parseFloat(op2Min) || 1;
+                const p2Max = parseFloat(op2Max) || 100;
 
-                if (op === '×') {
-                    const formatChoice = Math.floor(Math.random() * 3);
-                    if (formatChoice === 0) { // 1 decimal × 1 decimal
-                        const a = this.randomInt(10, 250);
-                        const b = this.randomInt(10, 250);
-                        displayOp1 = a / 10;
-                        displayOp2 = b / 10;
-                        ans = (a * b) / 100;
-                    } else if (formatChoice === 1) { // integer × 1 decimal
-                        const a = this.randomInt(2, 50);
-                        const b = this.randomInt(10, 350);
-                        displayOp1 = a;
-                        displayOp2 = b / 10;
-                        ans = (a * b) / 10;
-                    } else { // integer × 2 decimal
-                        const a = this.randomInt(2, 50);
-                        const b = this.randomInt(5, 99);
-                        displayOp1 = a;
-                        displayOp2 = b / 100;
-                        ans = (a * b) / 100;
-                    }
-                } else {
-                    const decPlaces1 = Math.random() > 0.5 ? 1 : 2;
-                    const decPlaces2 = Math.random() > 0.5 ? 1 : 2;
-                    const scale1 = Math.pow(10, decPlaces1);
-                    const scale2 = Math.pow(10, decPlaces2);
-                    
-                    const a = this.randomInt(
-                        op1Min * scale1,
-                        Math.min(op1Max, 99) * scale1
-                    );
-                    const b = this.randomInt(
-                        op2Min * scale2,
-                        Math.min(op2Max, 99) * scale2
-                    );
-                    
-                    displayOp1 = a / scale1;
-                    displayOp2 = b / scale2;
-                    
-                    if (op === '-') {
-                        if (displayOp1 < displayOp2) {
-                            // Swap to avoid negatives
-                            const temp = displayOp1;
-                            displayOp1 = displayOp2;
-                            displayOp2 = temp;
+                const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+                const randFloat = (min, max, places = 0) => {
+                    if (min === max) return min;
+                    const scale = Math.pow(10, places);
+                    const intMin = Math.round(min * scale);
+                    const intMax = Math.round(max * scale);
+                    if (intMin > intMax) [intMin, intMax] = [intMax, intMin];
+                    const rand = Math.floor(Math.random() * (intMax - intMin + 1)) + intMin;
+                    return rand / scale;
+                };
+
+                // Operation selection
+                const ops = allowedOps.filter(op => ['+', '-', '×', '÷'].includes(op));
+                if (ops.length === 0) ops.push('+');
+                const op = ops[Math.floor(Math.random() * ops.length)];
+
+                let a, b, answer, display, question;
+                let attempts = 0;
+                const maxAttempts = 100;
+
+                while (attempts < maxAttempts) {
+                    attempts++;
+                    let ok = false;
+
+                    switch (op) {
+                        case '+': {
+                            const placesA = Math.random() > 0.3 ? 1 : 2;
+                            const placesB = Math.random() > 0.3 ? 1 : 2;
+                            a = randFloat(p1Min, p1Max, placesA);
+                            b = randFloat(p2Min, p2Max, placesB);
+                            const sum = a + b;
+                            const sumStr = Num.canonical(sum, 2);
+                            if (sumStr !== null) {
+                                answer = sumStr;
+                                display = `${a.toFixed(placesA)} + ${b.toFixed(placesB)} =`;
+                                question = `${a.toFixed(placesA)} + ${b.toFixed(placesB)}`;
+                                ok = true;
+                            }
+                            break;
                         }
-                        ans = displayOp1 - displayOp2;
-                    } else {
-                        ans = displayOp1 + displayOp2;
+                        case '-': {
+                            const placesA = Math.random() > 0.3 ? 1 : 2;
+                            const placesB = Math.random() > 0.3 ? 1 : 2;
+                            a = randFloat(p1Min, p1Max, placesA);
+                            b = randFloat(p2Min, p2Max, placesB);
+                            if (a < b) [a, b] = [b, a]; // ensure positive result
+                            const diff = a - b;
+                            const diffStr = Num.canonical(diff, 2);
+                            if (diffStr !== null) {
+                                answer = diffStr;
+                                display = `${a.toFixed(placesA)} - ${b.toFixed(placesB)} =`;
+                                question = `${a.toFixed(placesA)} - ${b.toFixed(placesB)}`;
+                                ok = true;
+                            }
+                            break;
+                        }
+                        case '×': {
+                            // At least one operand must have a decimal.
+                            // Avoid trivial patterns: no operand should be 0 or 1 (unless range forces it).
+                            const type = Math.random();
+                            let placesA = 0, placesB = 0;
+                            if (type < 0.4) {
+                                placesA = 0; // integer
+                                placesB = 1;
+                            } else if (type < 0.7) {
+                                placesA = 1;
+                                placesB = 0;
+                            } else {
+                                placesA = 1;
+                                placesB = 1;
+                            }
+                            a = randFloat(p1Min, p1Max, placesA);
+                            b = randFloat(p2Min, p2Max, placesB);
+                            // Skip if either number is 0 or 1 (unless range is tiny)
+                            if ((Math.abs(a) <= 1.01 && p1Max > 2) || (Math.abs(b) <= 1.01 && p2Max > 2)) break;
+                            const prod = a * b;
+                            const prodStr = Num.canonical(prod, 2);
+                            if (prodStr !== null && prod >= 1 && prod <= 500) {
+                                answer = prodStr;
+                                display = `${a.toFixed(placesA)} × ${b.toFixed(placesB)} =`;
+                                question = `${a.toFixed(placesA)} × ${b.toFixed(placesB)}`;
+                                ok = true;
+                            }
+                            break;
+                        }
+                        case '÷': {
+                            // THREE PATTERNS that guarantee a clean quotient (≤1 decimal)
+                            const pattern = Math.random();
+                            let divisor, quotient, dividend;
+                            let placesDiv = 0, placesQuot = 0, placesDivid = 0;
+
+                            if (pattern < 0.4) {
+                                // 1) Integer ÷ Integer = Decimal (1 decimal)
+                                // divisor: integer within op2 range
+                                divisor = Math.floor(randFloat(p2Min, p2Max, 0));
+                                if (divisor <= 0) divisor = 1;
+                                // quotient: integer 2..10 or +0.5
+                                const base = Math.floor(Math.random() * 9) + 2;
+                                quotient = Math.random() > 0.5 ? base : base + 0.5;
+                                dividend = divisor * quotient;
+                                // Check dividend fits op1 range
+                                if (dividend >= p1Min && dividend <= p1Max) {
+                                    placesDiv = 0;
+                                    placesQuot = 1;
+                                    placesDivid = 0;
+                                    break; // success
+                                }
+                            } else if (pattern < 0.7) {
+                                // 2) Decimal ÷ Decimal = Clean (whole or 1 decimal)
+                                // Choose divisor from a set of clean decimals (including integers)
+                                const divisorOptions = [0.2, 0.5, 0.6, 0.8, 0.7, 0.9, 0.4, 0.3, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12];
+                                divisor = divisorOptions[Math.floor(Math.random() * divisorOptions.length)];
+                                if (divisor < p2Min || divisor > p2Max) break;
+                                // quotient: integer 2..10
+                                quotient = Math.floor(Math.random() * 9) + 2;
+                                dividend = divisor * quotient;
+                                if (dividend >= p1Min && dividend <= p1Max) {
+                                    placesDiv = (divisor % 1 === 0) ? 0 : 1;
+                                    placesQuot = 0;
+                                    placesDivid = 0;
+                                    break;
+                                }
+                            } else {
+                                // 3) Decimal ÷ Integer = Clean (whole or 1 decimal)
+                                // divisor: integer within op2 range
+                                divisor = Math.floor(randFloat(p2Min, p2Max, 0));
+                                if (divisor <= 0) divisor = 1;
+                                // quotient: integer 2..10 or +0.5
+                                const base = Math.floor(Math.random() * 9) + 2;
+                                quotient = Math.random() > 0.5 ? base : base + 0.5;
+                                dividend = divisor * quotient;
+                                // We want dividend to have one decimal place (or integer) so it looks like a decimal
+                                // but it's okay if it's integer; we'll format it with .0 if needed.
+                                if (dividend >= p1Min && dividend <= p1Max) {
+                                    placesDiv = 0;
+                                    placesQuot = (quotient % 1 === 0) ? 0 : 1;
+                                    placesDivid = (dividend % 1 === 0) ? 0 : 1;
+                                    break;
+                                }
+                            }
+
+                            // If we didn't break, try again
+                            if (dividend === undefined) break;
+
+                            // Build the strings
+                            const divStr = divisor % 1 === 0 ? divisor.toString() : divisor.toFixed(1);
+                            const dvdStr = dividend % 1 === 0 ? dividend.toString() : dividend.toFixed(1);
+                            const quotStr = Num.canonical(quotient, 2); // stored with up to 2 decimals, but it's actually clean
+
+                            if (quotStr === null) break;
+                            answer = quotStr;
+                            display = `${dvdStr} ÷ ${divStr} =`;
+                            question = `${dvdStr} ÷ ${divStr}`;
+                            ok = true;
+                            break;
+                        }
+                    }
+
+                    if (ok) {
+                        return {
+                            question: question,
+                            answer: answer,
+                            operation: "decimals",
+                            display: display
+                        };
                     }
                 }
-                
-                const cleanAnswer = Num.canonical(ans, 2);
-                
-                return { 
-                    question: `${displayOp1} ${op} ${displayOp2}`, 
-                    answer: cleanAnswer, 
-                    operation: "decimals", 
-                    display: `${displayOp1} ${op} ${displayOp2} =` 
+
+                // Fallback: a simple addition with one decimal each
+                const fallbackA = randFloat(p1Min, p1Max, 1);
+                const fallbackB = randFloat(p2Min, p2Max, 1);
+                const fallbackSum = fallbackA + fallbackB;
+                return {
+                    question: `${fallbackA.toFixed(1)} + ${fallbackB.toFixed(1)}`,
+                    answer: Num.canonical(fallbackSum, 2),
+                    operation: "decimals",
+                    display: `${fallbackA.toFixed(1)} + ${fallbackB.toFixed(1)} =`
                 };
             }
 
@@ -2343,12 +2601,12 @@
                     }
                 },
                 "squares": {
-                    presetName: "Squares (up to 50)", 
-                    timeLimit: 120, 
+                    presetName: "Squares (up to 99)", 
+                    timeLimit: 300, 
                     unlimited: true, 
                     autoAdvance: true,
                     operations: { 
-                        squares: { min: 2, max: 50 } 
+                        squares: { min: 11, max: 99 } 
                     }
                 },
                 "cubes": {
@@ -2500,15 +2758,67 @@
         function toggleAddition() {
             const additionChecked = document.querySelector("input[name='ops'][value='addition']").checked;
             const additionControls = document.getElementById("addition-controls");
-            if (additionChecked) additionControls.style.display = "block";
-            else additionControls.style.display = "none";
+            if (additionChecked) {
+                additionControls.classList.add("visible");
+            } else {
+                additionControls.classList.remove("visible");
+            }
         }
 
         function toggleSubtraction() {
             const subtractionChecked = document.querySelector("input[name='ops'][value='subtraction']").checked;
             const subtractionControls = document.getElementById("subtraction-controls");
-            if (subtractionChecked) subtractionControls.style.display = "block";
-            else subtractionControls.style.display = "none";
+            if (subtractionChecked) {
+                subtractionControls.classList.add("visible");
+            } else {
+                subtractionControls.classList.remove("visible");
+            }
+        }
+
+        function toggleDecimals() {
+            const decimalsChecked = document.getElementById("decimals-checkbox").checked;
+            const decimalsSub = document.getElementById("decimals-sub-options");
+            if (decimalsChecked) {
+                decimalsSub.classList.add("visible");
+            } else {
+                decimalsSub.classList.remove("visible");
+            }
+        }
+
+        function toggleFractions() {
+            const fractionsChecked = document.getElementById("fractions-checkbox").checked;
+            const fractionsSub = document.getElementById("fractions-sub-options");
+            if (fractionsChecked) {
+                fractionsSub.classList.add("visible");
+            } else {
+                fractionsSub.classList.remove("visible");
+            }
+        }
+
+        function getDecimalOperations() {
+            const decimalsChecked = document.getElementById("decimals-checkbox").checked;
+            if (!decimalsChecked) return [];
+            
+            const ops = [];
+            if (document.getElementById("dec-addition").checked) ops.push('+');
+            if (document.getElementById("dec-subtraction").checked) ops.push('-');
+            if (document.getElementById("dec-multiplication").checked) ops.push('×');
+            if (document.getElementById("dec-division").checked) ops.push('÷');
+            
+            return ops;
+        }
+
+        function getFractionOperations() {
+            const fractionsChecked = document.getElementById("fractions-checkbox").checked;
+            if (!fractionsChecked) return [];
+            
+            const ops = [];
+            if (document.getElementById("frac-addition").checked) ops.push('+');
+            if (document.getElementById("frac-subtraction").checked) ops.push('-');
+            if (document.getElementById("frac-multiplication").checked) ops.push('×');
+            if (document.getElementById("frac-division").checked) ops.push('÷');
+            
+            return ops;
         }
 
         function toggleCustomTime(selectElement) {
@@ -2557,10 +2867,10 @@
                     'hard-div': { title: 'Hard Division', desc: '2 mins · 2-digit divisors' },
                     'carry': { title: 'Carry Addition', desc: '2 mins · 3-digit addition' },
                     'borrow': { title: 'Borrow Subtraction', desc: '2 mins · 3-digit subtraction' },
-                    'squares': { title: 'Squares', desc: '2 mins · 2-50²' },
+                    'squares': { title: 'Squares', desc: '5 mins · 11-99²' },
                     'cubes': { title: 'Cubes', desc: '2 mins · 2-20³' },                   
                     'sqrt': { title: 'Square Roots', desc: '2 mins · Up to 40²' },       
-                    'fractions': { title: 'Fractions', desc: '2 mins · Add & Subtract' },
+                    'fractions': { title: 'Fractions', desc: '2 mins · All operations' },
                     'dec-perc': { title: 'Decimals & Percentages', desc: '2 mins · Mental conversions' }, 
                     'large-addition': { title: 'Large Addition', desc: '2 mins · 4-digit addition' },
                     'eleven': { title: '×/÷ by 11', desc: '2 mins · Speed drills' },
@@ -2712,7 +3022,7 @@
                 'hard-div': 'Hard Division (2-digit divisor)',
                 'carry': 'Carry Addition (3-digit)',
                 'borrow': 'Subtraction with Borrowing (3-digit)',
-                'squares': 'Squares (up to 50)',
+                'squares': 'Squares (up to 99)',
                 'cubes': 'Cubes (up to 20)',                     
                 'sqrt': 'Square Roots (up to 40²)',             
                 'fractions': 'Fractions Add/Sub',
@@ -2903,13 +3213,13 @@
             }
 
             const operations = {};
-            const op1MinVal = parseInt(document.getElementById("op1-min").value);
+            const op1MinVal = parseFloat(document.getElementById("op1-min").value);
             const op1Min = isNaN(op1MinVal) ? 1 : op1MinVal;
-            const op1MaxVal = parseInt(document.getElementById("op1-max").value);
+            const op1MaxVal = parseFloat(document.getElementById("op1-max").value);
             const op1Max = isNaN(op1MaxVal) ? 100 : op1MaxVal;
-            const op2MinVal = parseInt(document.getElementById("op2-min").value);
+            const op2MinVal = parseFloat(document.getElementById("op2-min").value);
             const op2Min = isNaN(op2MinVal) ? 1 : op2MinVal;
-            const op2MaxVal = parseInt(document.getElementById("op2-max").value);
+            const op2MaxVal = parseFloat(document.getElementById("op2-max").value);
             const op2Max = isNaN(op2MaxVal) ? 100 : op2MaxVal;
 
             selectedOps.forEach(op => {
@@ -2939,10 +3249,19 @@
                         operations.squares = { min: Math.max(op1Min, 2), max: Math.min(op1Max, 99) };
                         break;
                     case "fractions": 
-                        operations.fractions = {}; 
+                        const fracOps = getFractionOperations();
+                        if (fracOps.length > 0) {
+                            operations.fractions = { allowedOps: fracOps };
+                        }
                         break;
                     case "decimals": 
-                        operations.decimals = { op1Min, op1Max, op2Min, op2Max }; 
+                        const decOps = getDecimalOperations();
+                        if (decOps.length > 0) {
+                            operations.decimals = { 
+                                op1Min, op1Max, op2Min, op2Max, 
+                                allowedOps: decOps 
+                            };
+                        }
                         break;
                     case "percentages": 
                         operations.percentages = {}; 
@@ -3006,10 +3325,13 @@
             document.getElementById("speed-mode").checked = false;
             document.getElementById("speed-controls").style.display = "none";
             document.getElementById("force-carry").checked = false;
-            document.getElementById("force-carry").disabled = false;
             document.getElementById("allow-negatives").checked = false;
-            document.getElementById("subtraction-controls").style.display = "none";
-            document.getElementById("addition-controls").style.display = "block";
+            document.getElementById("force-borrow").checked = false;
+            // Reset sub-options visibility
+            document.getElementById("addition-controls").classList.add("visible");
+            document.getElementById("subtraction-controls").classList.remove("visible");
+            document.getElementById("decimals-sub-options").classList.remove("visible");
+            document.getElementById("decimals-checkbox").checked = false;
             document.getElementById("question-time-limit").value = "2";
             document.getElementById("question-time-custom").style.display = "none";
             document.getElementById("question-custom-time-input").value = "";
@@ -3019,6 +3341,7 @@
             document.getElementById("penalty-amount").disabled = true;
             togglePenalty();
             toggleMCQ();
+            toggleFractions();
         }
 
         // ===== PER-QUESTION TIMER VISUALS =====
@@ -3111,7 +3434,7 @@
                 attempts++;
                 let distractor;
                 if (question.operation === "fractions") {
-                    const denoms = [2, 3, 4, 5, 8];
+                    const denoms = [2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 20, 24, 25, 30];
                     const d = denoms[Math.floor(Math.random() * denoms.length)];
                     const n = Math.floor(Math.random() * (d - 1)) + 1;
                     distractor = `${n}/${d}`;
@@ -3260,7 +3583,7 @@
                     "hard-div": "Hard Division (2-digit divisor)",
                     "carry": "Carry Addition (3-digit)",
                     "borrow": "Subtraction with Borrowing (3-digit)",
-                    "squares": "Squares (up to 50)",
+                    "squares": "Squares (up to 99)",
                     "cubes": "Cubes (up to 20)",
                     "sqrt": "Square Roots (up to 40²)",
                     "fractions": "Fractions Add/Sub",
